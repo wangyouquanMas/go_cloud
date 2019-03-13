@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"encoding/json"
 	"filestore-server/store/oss"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,9 +17,18 @@ import (
 )
 
 // UploadHandler ： 处理文件上传
-func UploadHandler(c *gin.Context) {
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		// 返回上传html页面
+		data, err := ioutil.ReadFile("./static/view/index.html")
+		if err != nil {
+			io.WriteString(w, "internel server error")
+			return
+		}
+		io.WriteString(w, string(data))
+	} else if r.Method == "POST" {
 		// 接收文件流及存储到本地目录
-		file, head, err := c.Request.FormFile("file")
+		file, head, err := r.FormFile("file")
 		if err != nil {
 			fmt.Printf("Failed to get data, err:%s\n", err.Error())
 			return
@@ -61,11 +70,7 @@ func UploadHandler(c *gin.Context) {
 		err = oss.Bucket().PutObject(ossPath, newFile)
 		if err != nil {
 			fmt.Println(err.Error())
-			c.JSON(http.StatusOK,
-				gin.H{
-					"code": -1,
-					"msg": "Upload failed",
-				})
+			w.Write([]byte("Upload failed!"))
 			return
 		}
 		fileMeta.Location = ossPath
@@ -74,109 +79,106 @@ func UploadHandler(c *gin.Context) {
 		_ = meta.UpdateFileMetaDB(fileMeta)
 
 		// 更新用户文件表记录
-		username := c.Request.FormValue("username")
+		r.ParseForm()
+		username := r.Form.Get("username")
 		suc := dblayer.OnUserFileUploadFinished(username, fileMeta.FileSha1,
 			fileMeta.FileName, fileMeta.FileSize)
 		if suc {
-			c.Redirect(http.StatusFound, "/static/view/home.html")
+			http.Redirect(w, r, "/static/view/home.html", http.StatusFound)
 		} else {
-			c.JSON(http.StatusOK,
-				gin.H{
-					"code": -1,
-					"msg": "Upload failed",
-				})
+			w.Write([]byte("Upload Failed."))
 		}
+	}
 }
 
 // UploadSucHandler : 上传已完成
-func UploadSucHandler(c *gin.Context) {
-	c.JSON(http.StatusOK,
-		gin.H{
-			"code": 0,
-			"msg": "Upload Finish!",
-		})
+func UploadSucHandler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Upload finished!")
 }
 
 // GetFileMetaHandler : 获取文件元信息
-func GetFileMetaHandler(c *gin.Context) {
+func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 
-	filehash := c.Request.FormValue("filehash")
+	filehash := r.Form["filehash"][0]
 	//fMeta := meta.GetFileMeta(filehash)
 	fMeta, err := meta.GetFileMetaDB(filehash)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError,
-			gin.H{
-				"code": -2,
-				"msg": "Upload failed!",
-			})
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if fMeta != nil {
 		data, err := json.Marshal(fMeta)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError,
-				gin.H{
-					"code": -3,
-					"msg": "Upload failed!",
-				})
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		c.Data(http.StatusOK, "application/json", data)
+		w.Write(data)
 	} else {
-		c.JSON(http.StatusOK,
-			gin.H{
-				"code": -4,
-				"msg": "No sub file",
-			})
+		w.Write([]byte(`{"code":-1,"msg":"no such file"}`))
 	}
 }
 
 // FileQueryHandler : 查询批量的文件元信息
-func FileQueryHandler(c *gin.Context) {
+func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 
-	limitCnt, _ := strconv.Atoi(c.Request.FormValue("limit"))
-	username := c.Request.FormValue("username")
+	limitCnt, _ := strconv.Atoi(r.Form.Get("limit"))
+	username := r.Form.Get("username")
 	//fileMetas, _ := meta.GetLastFileMetasDB(limitCnt)
 	userFiles, err := dblayer.QueryUserFileMetas(username, limitCnt)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError,
-			gin.H{
-				"code": -1,
-				"msg": "Query failed!",
-			})
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	data, err := json.Marshal(userFiles)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError,
-			gin.H{
-				"code": -2,
-				"msg": "Query failed!",
-			})
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	c.Data(http.StatusOK, "application/json", data)
+	w.Write(data)
 }
 
 // DownloadHandler : 文件下载接口
-func DownloadHandler(c *gin.Context) {
-	fsha1 := c.Request.FormValue("filehash")
+func DownloadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	fsha1 := r.Form.Get("filehash")
 	fm, _ := meta.GetFileMetaDB(fsha1)
 
-	c.FileAttachment(fm.Location, fm.FileName)
+	f, err := os.Open(fm.Location)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octect-stream")
+	w.Header().Set("content-disposition", "attachment; filename=\""+fm.FileName+"\"")
+	w.Write(data)
 }
 
 // FileMetaUpdateHandler ： 更新元信息接口(重命名)
-func FileMetaUpdateHandler(c *gin.Context) {
+func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 
-	opType := c.Request.FormValue("op")
-	fileSha1 := c.Request.FormValue("filehash")
-	newFileName := c.Request.FormValue("filename")
+	opType := r.Form.Get("op")
+	fileSha1 := r.Form.Get("filehash")
+	newFileName := r.Form.Get("filename")
 
 	if opType != "0" {
-		c.Status(http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -188,16 +190,17 @@ func FileMetaUpdateHandler(c *gin.Context) {
 
 	data, err := json.Marshal(curFileMeta)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	c.JSON(http.StatusOK, data)
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 // FileDeleteHandler : 删除文件及元信息
-func FileDeleteHandler(c *gin.Context) {
-	fileSha1 := c.Request.FormValue("filehash")
+func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	fileSha1 := r.Form.Get("filehash")
 
 	fMeta := meta.GetFileMeta(fileSha1)
 	// 删除文件
@@ -206,23 +209,24 @@ func FileDeleteHandler(c *gin.Context) {
 	meta.RemoveFileMeta(fileSha1)
 	// TODO: 删除表文件信息
 
-	c.Status(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
 // TryFastUploadHandler : 尝试秒传接口
-func TryFastUploadHandler(c *gin.Context) {
+func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 
 	// 1. 解析请求参数
-	username := c.Request.FormValue("username")
-	filehash := c.Request.FormValue("filehash")
-	filename := c.Request.FormValue("filename")
-	filesize, _ := strconv.Atoi(c.Request.FormValue("filesize"))
+	username := r.Form.Get("username")
+	filehash := r.Form.Get("filehash")
+	filename := r.Form.Get("filename")
+	filesize, _ := strconv.Atoi(r.Form.Get("filesize"))
 
 	// 2. 从文件表中查询相同hash的文件记录
 	fileMeta, err := meta.GetFileMetaDB(filehash)
 	if err != nil {
 		fmt.Println(err.Error())
-		c.Status(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -232,7 +236,7 @@ func TryFastUploadHandler(c *gin.Context) {
 			Code: -1,
 			Msg:  "秒传失败，请访问普通上传接口",
 		}
-		c.Data(http.StatusOK, "application/json", resp.JSONBytes())
+		w.Write(resp.JSONBytes())
 		return
 	}
 
@@ -244,25 +248,26 @@ func TryFastUploadHandler(c *gin.Context) {
 			Code: 0,
 			Msg:  "秒传成功",
 		}
-		c.Data(http.StatusOK, "application/json", resp.JSONBytes())
+		w.Write(resp.JSONBytes())
 		return
 	}
 	resp := util.RespMsg{
 		Code: -2,
 		Msg:  "秒传失败，请稍后重试",
 	}
-	c.Data(http.StatusOK, "application/json", resp.JSONBytes())
+	w.Write(resp.JSONBytes())
 	return
 }
 
 // DownloadURLHandler : 生成文件的下载地址
-func DownloadURLHandler(c *gin.Context) {
-	filehash := c.Request.FormValue("filehash")
+func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	filehash := r.Form.Get("filehash")
 	// 从文件表查找记录
 	row, _ := dblayer.GetFileMeta(filehash)
 
 	// TODO: 判断文件存在OSS还是Ceph
 
 	signedURL := oss.DownloadURL(row.FileAddr.String)
-	c.Data(http.StatusOK, "octet-stream", []byte(signedURL))
+	w.Write([]byte(signedURL))
 }
