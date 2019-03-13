@@ -1,6 +1,9 @@
 # distributed-fileserver
 基于golang实现的一种分布式云存储服务
 
+- master分支: 通过原生net/http实现各接口功能
+- gin分支: 通过Gin框架来改造(微服务化章节之后主要基于Gin框架来进行演示)
+
 进度：
 * [x] 简单的文件上传服务
 * [x] mysql存储文件元数据
