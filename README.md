@@ -13,3 +13,5 @@
 * [ ] 使用RabbitMQ实现异步任务队列
 * [ ] 微服务化(API网关, 服务注册, RPC通讯)
 * [ ] CI/CD(持续集成)
+
+手记博客 [http://www.imooc.com/u/6198190](http://www.imooc.com/u/6198190)
