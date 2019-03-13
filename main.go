@@ -42,7 +42,7 @@ func main() {
 
 	fmt.Println("服务开始启动，监听[0.0.0.0:8080]中...")
 	// 启动服务并监听端口
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":9999", nil)
 	if err != nil {
 		fmt.Printf("Failed to start server, err:%s", err.Error())
 	}

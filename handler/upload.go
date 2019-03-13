@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"filestore-server/store/oss"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,7 +10,11 @@ import (
 	"strconv"
 	"time"
 
+	"filestore-server/store/oss"
+	"filestore-server/store/ceph"
 	dblayer "filestore-server/db"
+	cfg "filestore-server/config"
+	cmn "filestore-server/common"
 	"filestore-server/meta"
 	"filestore-server/util"
 )
@@ -57,23 +60,27 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
 
-		// 同时将文件写入ceph存储
+		// 游标重新回到文件头部
 		newFile.Seek(0, 0)
-		// data, _ := ioutil.ReadAll(newFile)
-		// bucket := ceph.GetCephBucket("userfile")
-		// cephPath := "/ceph/" + fileMeta.FileSha1
-		// _ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
-		// fileMeta.Location = cephPath
 
-		// 文件写入OSS存储
-		ossPath := "oss/" + fileMeta.FileSha1
-		err = oss.Bucket().PutObject(ossPath, newFile)
-		if err != nil {
-			fmt.Println(err.Error())
-			w.Write([]byte("Upload failed!"))
-			return
+		if (cfg.CurrentStoreType == cmn.StoreCeph) {
+		// 文件写入Ceph存储
+			data, _ := ioutil.ReadAll(newFile)
+			cephPath := "/ceph/" + fileMeta.FileSha1
+			_ = ceph.PutObject("userfile", cephPath,  data)
+			fileMeta.Location = cephPath
+
+		} else if (cfg.CurrentStoreType == cmn.StoreOSS) {
+			// 文件写入OSS存储
+			ossPath := "oss/" + fileMeta.FileSha1
+			err = oss.Bucket().PutObject(ossPath, newFile)
+			if err != nil {
+				fmt.Println(err.Error())
+				w.Write([]byte("Upload failed!"))
+				return
+			}
+			fileMeta.Location = ossPath
 		}
-		fileMeta.Location = ossPath
 
 		// meta.UpdateFileMeta(fileMeta)
 		_ = meta.UpdateFileMetaDB(fileMeta)
@@ -161,6 +168,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/octect-stream")
+	// attachment表示文件将会提示下载到本地，而不是直接在浏览器中打开
 	w.Header().Set("content-disposition", "attachment; filename=\""+fm.FileName+"\"")
 	w.Write(data)
 }
