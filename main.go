@@ -40,6 +40,7 @@ func main() {
 	http.HandleFunc("/user/signin", handler.SignInHandler)
 	http.HandleFunc("/user/info", handler.HTTPInterceptor(handler.UserInfoHandler))
 
+	fmt.Println("服务开始启动，监听[0.0.0.0:8080]中...")
 	// 启动服务并监听端口
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
