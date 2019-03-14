@@ -1,9 +1,10 @@
 package main
 
 import (
-	"filestore-server/handler"
 	"fmt"
 	"net/http"
+	"filestore-server/handler"
+	cfg "filestore-server/config"
 )
 
 func main() {
@@ -40,9 +41,9 @@ func main() {
 	http.HandleFunc("/user/signin", handler.SignInHandler)
 	http.HandleFunc("/user/info", handler.HTTPInterceptor(handler.UserInfoHandler))
 
-	fmt.Println("服务开始启动，监听[0.0.0.0:8080]中...")
+	fmt.Printf("服务开始启动，监听[%s]中...\n", cfg.UploadServiceHost)
 	// 启动服务并监听端口
-	err := http.ListenAndServe(":9999", nil)
+	err := http.ListenAndServe(cfg.UploadServiceHost, nil)
 	if err != nil {
 		fmt.Printf("Failed to start server, err:%s", err.Error())
 	}
