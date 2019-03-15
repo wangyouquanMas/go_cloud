@@ -14,7 +14,9 @@ func HTTPInterceptor(h http.HandlerFunc) http.HandlerFunc {
 
 			//验证登录token是否有效
 			if len(username) < 3 || !IsTokenValid(token) {
-				w.WriteHeader(http.StatusForbidden)
+				// w.WriteHeader(http.StatusForbidden)
+				// token校验失败则跳转到登录页面
+				http.Redirect(w, r, "/static/view/signin.html", http.StatusFound)
 				return
 			}
 			h(w, r)

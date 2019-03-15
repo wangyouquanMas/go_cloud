@@ -5,13 +5,16 @@ import (
 	"net/http"
 	"filestore-server/handler"
 	cfg "filestore-server/config"
+	"os"
+	"path/filepath"
 )
 
 func main() {
 	// 静态资源处理
-	http.Handle("/static/",
-		http.StripPrefix("/static/",
-			http.FileServer(http.Dir("./static"))))
+	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	pwd,_ := os.Getwd()
+	fmt.Println(pwd + " " + os.Args[0])
+	http.Handle("/static/", http.FileServer(http.Dir(filepath.Join(pwd, "./"))))
 
 	// 文件存取接口
 	http.HandleFunc("/file/upload", handler.HTTPInterceptor(handler.UploadHandler))
@@ -37,6 +40,7 @@ func main() {
 		handler.HTTPInterceptor(handler.CompleteUploadHandler))
 
 	// 用户相关接口
+	http.HandleFunc("/", handler.SignInHandler)
 	http.HandleFunc("/user/signup", handler.SignupHandler)
 	http.HandleFunc("/user/signin", handler.SignInHandler)
 	http.HandleFunc("/user/info", handler.HTTPInterceptor(handler.UserInfoHandler))

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"strings"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,6 +30,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		io.WriteString(w, string(data))
+		// 另一种返回方式:
+		// 动态文件使用http.HandleFunc设置，静态文件使用到http.FileServer设置(见main.go)
+		// 所以直接redirect到http.FileServer所配置的url
+		// http.Redirect(w, r, "/static/view/index.html",  http.StatusFound)
 	} else if r.Method == "POST" {
 		// 接收文件流及存储到本地目录
 		file, head, err := r.FormFile("file")
@@ -269,13 +274,22 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 // DownloadURLHandler : 生成文件的下载地址
 func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
 	filehash := r.Form.Get("filehash")
 	// 从文件表查找记录
 	row, _ := dblayer.GetFileMeta(filehash)
 
-	// TODO: 判断文件存在OSS还是Ceph
-
-	signedURL := oss.DownloadURL(row.FileAddr.String)
-	w.Write([]byte(signedURL))
+	// TODO: 判断文件存在OSS，还是Ceph，还是在本地
+	if strings.HasPrefix(row.FileAddr.String, "/tmp") {
+		username := r.Form.Get("username")
+		token := r.Form.Get("token")
+		tmpUrl := fmt.Sprintf("http://%s/file/download?filehash=%s&username=%s&token=%s", 
+			r.Host, filehash, username, token)
+		w.Write([]byte(tmpUrl))
+	} else if strings.HasPrefix(row.FileAddr.String, "/ceph") {
+		// TODO: ceph下载url
+	} else if strings.HasPrefix(row.FileAddr.String, "oss/") {
+		// oss下载url
+		signedURL := oss.DownloadURL(row.FileAddr.String)
+		w.Write([]byte(signedURL))
+	}
 }
