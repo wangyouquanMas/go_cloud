@@ -43,6 +43,10 @@ func ProcessTransfer(msg []byte) bool {
 }
 
 func main() {
+	if !config.AsyncTransferEnable {
+		log.Println("异步转移文件功能目前被禁用，请检查相关配置")
+		return
+	}
 	log.Println("文件转移服务启动，开始监听转移任务队列...")
 	mq.StartConsume(
 		config.TransOSSQueueName,

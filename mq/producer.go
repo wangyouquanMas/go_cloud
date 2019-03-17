@@ -14,6 +14,10 @@ var channel *amqp.Channel
 var notifyClose chan *amqp.Error
 
 func init() {
+	// 是否开启异步转移功能，开启时才初始化rabbitMQ连接
+	if !config.AsyncTransferEnable {
+		return
+	}
 	if initChannel() {
 		channel.NotifyClose(notifyClose)
 	}
