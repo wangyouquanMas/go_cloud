@@ -75,31 +75,35 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			cephPath := "/ceph/" + fileMeta.FileSha1
 			_ = ceph.PutObject("userfile", cephPath, data)
 			fileMeta.Location = cephPath
-
 		} else if cfg.CurrentStoreType == cmn.StoreOSS {
 			// 文件写入OSS存储
 			ossPath := "oss/" + fileMeta.FileSha1
-			// err = oss.Bucket().PutObject(ossPath, newFile)
-			// if err != nil {
-			// 	fmt.Println(err.Error())
-			// 	w.Write([]byte("Upload failed!"))
-			// 	return
-			// }
-			// fileMeta.Location = ossPath
-			data := mq.TransferData{
-				FileHash:      fileMeta.FileSha1,
-				CurLocation:   fileMeta.Location,
-				DestLocation:  ossPath,
-				DestStoreType: cmn.StoreOSS,
-			}
-			pubData, _ := json.Marshal(data)
-			pubSuc := mq.Publish(
-				cfg.TransExchangeName,
-				cfg.TransOSSRoutingKey,
-				pubData,
-			)
-			if !pubSuc {
-				// TODO: 当前发送转移信息失败，稍后重试
+			// 判断写入OSS为同步还是异步
+			if !cfg.AsyncTransferEnable {
+				err = oss.Bucket().PutObject(ossPath, newFile)
+				if err != nil {
+					fmt.Println(err.Error())
+					w.Write([]byte("Upload failed!"))
+					return
+				}
+				fileMeta.Location = ossPath
+			} else {
+				// 写入异步转移任务队列
+				data := mq.TransferData{
+					FileHash:      fileMeta.FileSha1,
+					CurLocation:   fileMeta.Location,
+					DestLocation:  ossPath,
+					DestStoreType: cmn.StoreOSS,
+				}
+				pubData, _ := json.Marshal(data)
+				pubSuc := mq.Publish(
+					cfg.TransExchangeName,
+					cfg.TransOSSRoutingKey,
+					pubData,
+				)
+				if !pubSuc {
+					// TODO: 当前发送转移信息失败，稍后重试
+				}
 			}
 		}
 
