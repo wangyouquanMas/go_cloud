@@ -32,7 +32,7 @@ go get github.com/streadway/amqp
 - 在加入rabbitMQ实现文件异步转移之前，启动方式：
 
     - 启动上传应用程序:
-```shell
+```bash
 # cd $GOPATH/<你的工程目录>
 > cd $GOPATH/filestore-server
 > go run main.go
@@ -41,14 +41,14 @@ go get github.com/streadway/amqp
 - 在加入rabbitMQ实现文件异步转移阶段，启动方式(分裂成了两个独立程序)：
 
     - 启动上传应用程序:
-```
+```bash
 # cd $GOPATH/<你的工程目录>
 > cd $GOPATH/filestore-server
 > go run service/upload/main.go
 ```
 
     - 启动转移应用程序:
-```
+```bash
 # cd $GOPATH/<你的工程目录>
 > cd $GOPATH/filestore-server
 > go run service/transfer/main.go
