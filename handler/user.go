@@ -24,7 +24,7 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		// 	return
 		// }
 		// w.Write(data)
-		http.Redirect(w, r, "/static/view/signup.html",  http.StatusFound)
+		http.Redirect(w, r, "/static/view/signup.html", http.StatusFound)
 		return
 	}
 	r.ParseForm()
@@ -57,7 +57,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		// 	return
 		// }
 		// w.Write(data)
-		http.Redirect(w, r, "/static/view/signin.html",  http.StatusFound)
+		http.Redirect(w, r, "/static/view/signin.html", http.StatusFound)
 		return
 	}
 

@@ -91,7 +91,7 @@
       url: "/file/query?" + queryParams(),
       type: "POST",
       data: {
-        limit: 10
+        limit: 15
       },
       error: function (jqXHR, textStatus, errorThrown) {
         if (textStatus == "error") {
@@ -112,7 +112,7 @@
         for (var i = 0; i < data.length; i++) {
           var x = document.getElementById('filetbl').insertRow();
           var cell = x.insertCell();
-          cell.innerHTML = data[i].FileHash;
+          cell.innerHTML = data[i].FileHash.substr(0, 20)+"...";
 
           cell = x.insertCell();
           cell.innerHTML = data[i].FileName;

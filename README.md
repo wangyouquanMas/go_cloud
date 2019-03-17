@@ -22,9 +22,36 @@ go get github.com/json-iterator/go
 go get github.com/aliyun/aliyun-oss-go-sdk/oss
 go get gopkg.in/amz.v1/aws
 go get gopkg.in/amz.v1/s3
+go get github.com/streadway/amqp
 ```
 其中如果有提示`golang.org/x`相关的包无法下载的话，可以参考这篇文章:
 [国内下载golang.org/x/net](https://yq.aliyun.com/articles/292301?spm=5176.10695662.1996646101.searchclickresult.6155183eCmXHbQ)
+
+## 关于应用启动
+
+- 在加入rabbitMQ实现文件异步转移之前，启动方式：
+
+```shell
+# cd $GOPATH/<你的工程目录>
+cd $GOPATH/filestore-server
+go run main.go
+```
+
+- 在加入rabbitMQ实现文件异步转移阶段，启动方式(分裂成了两个独立程序)：
+
+    - 启动上传应用程序:
+```
+# cd $GOPATH/<你的工程目录>
+> cd $GOPATH/filestore-server
+> go run service/upload/main.go
+```
+
+    - 启动转移应用程序:
+```
+# cd $GOPATH/<你的工程目录>
+> cd $GOPATH/filestore-server
+> go run service/transfer/main.go
+```
 
 ## 进度说明：
 * [x] 简单的文件上传服务

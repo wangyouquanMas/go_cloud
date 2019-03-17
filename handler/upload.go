@@ -1,22 +1,23 @@
 package handler
 
 import (
-	"strings"
 	"encoding/json"
+	"filestore-server/mq"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
-	"filestore-server/store/oss"
-	"filestore-server/store/ceph"
-	dblayer "filestore-server/db"
-	cfg "filestore-server/config"
 	cmn "filestore-server/common"
+	cfg "filestore-server/config"
+	dblayer "filestore-server/db"
 	"filestore-server/meta"
+	"filestore-server/store/ceph"
+	"filestore-server/store/oss"
 	"filestore-server/util"
 )
 
@@ -68,23 +69,38 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// 游标重新回到文件头部
 		newFile.Seek(0, 0)
 
-		if (cfg.CurrentStoreType == cmn.StoreCeph) {
-		// 文件写入Ceph存储
+		if cfg.CurrentStoreType == cmn.StoreCeph {
+			// 文件写入Ceph存储
 			data, _ := ioutil.ReadAll(newFile)
 			cephPath := "/ceph/" + fileMeta.FileSha1
-			_ = ceph.PutObject("userfile", cephPath,  data)
+			_ = ceph.PutObject("userfile", cephPath, data)
 			fileMeta.Location = cephPath
 
-		} else if (cfg.CurrentStoreType == cmn.StoreOSS) {
+		} else if cfg.CurrentStoreType == cmn.StoreOSS {
 			// 文件写入OSS存储
 			ossPath := "oss/" + fileMeta.FileSha1
-			err = oss.Bucket().PutObject(ossPath, newFile)
-			if err != nil {
-				fmt.Println(err.Error())
-				w.Write([]byte("Upload failed!"))
-				return
+			// err = oss.Bucket().PutObject(ossPath, newFile)
+			// if err != nil {
+			// 	fmt.Println(err.Error())
+			// 	w.Write([]byte("Upload failed!"))
+			// 	return
+			// }
+			// fileMeta.Location = ossPath
+			data := mq.TransferData{
+				FileHash:      fileMeta.FileSha1,
+				CurLocation:   fileMeta.Location,
+				DestLocation:  ossPath,
+				DestStoreType: cmn.StoreOSS,
 			}
-			fileMeta.Location = ossPath
+			pubData, _ := json.Marshal(data)
+			pubSuc := mq.Publish(
+				cfg.TransExchangeName,
+				cfg.TransOSSRoutingKey,
+				pubData,
+			)
+			if !pubSuc {
+				// TODO: 当前发送转移信息失败，稍后重试
+			}
 		}
 
 		// meta.UpdateFileMeta(fileMeta)
@@ -282,7 +298,7 @@ func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(row.FileAddr.String, "/tmp") {
 		username := r.Form.Get("username")
 		token := r.Form.Get("token")
-		tmpUrl := fmt.Sprintf("http://%s/file/download?filehash=%s&username=%s&token=%s", 
+		tmpUrl := fmt.Sprintf("http://%s/file/download?filehash=%s&username=%s&token=%s",
 			r.Host, filehash, username, token)
 		w.Write([]byte(tmpUrl))
 	} else if strings.HasPrefix(row.FileAddr.String, "/ceph") {
