@@ -38,7 +38,7 @@ func main() {
 		handler.HTTPInterceptor(handler.CompleteUploadHandler))
 
 	// 用户相关接口
-	http.HandleFunc("/", handler.SignInHandler)
+	// http.HandleFunc("/", handler.SignInHandler)
 	http.HandleFunc("/user/signup", handler.SignupHandler)
 	http.HandleFunc("/user/signin", handler.SignInHandler)
 	http.HandleFunc("/user/info", handler.HTTPInterceptor(handler.UserInfoHandler))
