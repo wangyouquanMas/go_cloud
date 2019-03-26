@@ -73,6 +73,6 @@ c8e93300cf75  172.17.0.2:8301  alive   server  1.4.2  2         dc1  <all>
 
 ### 进入ui界面
 
-通过http://localhost:8500可以打开ui界面；(8501或8502也可以)
+通过`http://localhost:8500`可以打开ui界面；(8501或8502也可以)
 
-![consul_ui](https://git.imooc.com/coding-323/filestore-server/src/master/doc/consul-ui.png)
+![consul ui](https://git.imooc.com/coding-323/filestore-server/src/master/doc/consul-ui.png)
