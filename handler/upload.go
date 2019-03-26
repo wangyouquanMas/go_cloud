@@ -267,15 +267,27 @@ func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 // FileDeleteHandler : 删除文件及元信息
 func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	username := r.Form.Get("username")
 	fileSha1 := r.Form.Get("filehash")
 
-	fMeta := meta.GetFileMeta(fileSha1)
-	// 删除文件
-	os.Remove(fMeta.Location)
-	// 删除文件元信息
-	meta.RemoveFileMeta(fileSha1)
-	// TODO: 删除表文件信息
+	fm, err := meta.GetFileMetaDB(fileSha1)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	// 删除本地文件
+	os.Remove(fm.Location)
+	// TODO: 可考虑删除Ceph/OSS上的文件
+	// 可以不立即删除，加个超时机制，
+	// 比如该文件10天后也没有用户再次上传，那么就可以真正的删除了
+
+	// 删除文件表中的一条记录
+	suc := dblayer.DeleteUserFile(username, fileSha1)
+	if !suc {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
