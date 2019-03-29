@@ -41,7 +41,12 @@ func init() {
 
 // UploadHandler : 响应上传页面
 func UploadHandler(c *gin.Context) {
-	c.Redirect(http.StatusFound, "/static/view/index.html")
+	data, err := ioutil.ReadFile("./static/view/upload.html")
+	if err != nil {
+		c.String(404, `网页不存在`)
+		return
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", data)
 }
 
 // DoUploadHandler ： 处理文件上传
@@ -231,7 +236,7 @@ func DownloadHandler(c *gin.Context) {
 
 	if strings.HasPrefix(fm.Location, cfg.TempLocalRootDir) {
 		// 本地文件， 直接下载
-		c.FileAttachment(fm.Location, fm.FileName)
+		c.FileAttachment(fm.Location, userFile.FileName)
 	} else if strings.HasPrefix(fm.Location, cfg.CephRootDir) {
 		// ceph中的文件，通过ceph api先下载
 		bucket := ceph.GetCephBucket("userfile")
