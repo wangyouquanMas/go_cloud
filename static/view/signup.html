@@ -93,16 +93,12 @@
       error: function (err) {
         alert(err);
       },
-      success: function (data) {
-        if (data == 'SUCCESS') {
-          // 成功后跳到登录页
-          document.getElementById("login_hint").style.display = "block";
-          setTimeout(() => {
-            window.location.href = '/static/view/signin.html';
-          }, 2000);
-
+      success: function (resp) {
+        if (resp.code == 0) {
+          alert("注册成功");
+          window.location.href = "/user/signin";
         } else {
-          alert('注册失败');
+          alert("注册失败");
         }
       }
     });
