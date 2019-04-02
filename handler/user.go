@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"filestore-server/common"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -28,10 +29,11 @@ func DoSignupHandler(c *gin.Context) {
 	username := c.Request.FormValue("username")
 	passwd := c.Request.FormValue("password")
 
+	// 校验用户名密码
 	if len(username) < 3 || len(passwd) < 5 {
 		c.JSON(http.StatusOK, gin.H{
-			"msg":  "Invalid parameter",
-			"code": -1,
+			"msg":  "请求参数无效",
+			"code": common.StatusParamInvalid,
 		})
 		return
 	}
@@ -42,13 +44,13 @@ func DoSignupHandler(c *gin.Context) {
 	suc := dblayer.UserSignup(username, encPasswd)
 	if suc {
 		c.JSON(http.StatusOK, gin.H{
-			"msg":  "Signup succeeded",
-			"code": 0,
+			"msg":  "注册成功",
+			"code": common.StatusOK,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"msg":  "Signup failed",
-			"code": -2,
+			"msg":  "注册失败",
+			"code": common.StatusRegisterFailed,
 		})
 	}
 }
@@ -69,8 +71,8 @@ func DoSignInHandler(c *gin.Context) {
 	pwdChecked := dblayer.UserSignin(username, encPasswd)
 	if !pwdChecked {
 		c.JSON(http.StatusOK, gin.H{
-			"msg":  "Login failed",
-			"code": -1,
+			"msg":  "登录失败",
+			"code": common.StatusLoginFailed,
 		})
 		return
 	}
@@ -80,17 +82,16 @@ func DoSignInHandler(c *gin.Context) {
 	upRes := dblayer.UpdateToken(username, token)
 	if !upRes {
 		c.JSON(http.StatusOK, gin.H{
-			"msg":  "Login failed",
-			"code": -2,
+			"msg":  "登录失败",
+			"code": common.StatusLoginFailed,
 		})
 		return
 	}
 
-	// 3. 登录成功后重定向到首页
-	//w.Write([]byte("http://" + r.Host + "/static/view/home.html"))
+	// 3. 登录成功，返回用户信息
 	resp := util.RespMsg{
-		Code: 0,
-		Msg:  "OK",
+		Code: int(common.StatusOK),
+		Msg:  "登录成功",
 		Data: struct {
 			Location string
 			Username string

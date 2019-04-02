@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"filestore-server/common"
+	"filestore-server/util"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +19,12 @@ func HTTPInterceptor() gin.HandlerFunc {
 			// w.WriteHeader(http.StatusForbidden)
 			// token校验失败则跳转到登录页面
 			c.Abort()
-			c.Redirect(http.StatusFound, "/static/view/signin.html")
+			resp := util.NewRespMsg(
+				int(common.StatusTokenInvalid),
+				"token无效",
+				nil,
+			)
+			c.JSON(http.StatusOK, resp)
 			return
 		}
 		c.Next()

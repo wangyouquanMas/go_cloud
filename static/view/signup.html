@@ -91,10 +91,10 @@
         "password": password.value
       },
       error: function (err) {
-        alert(err);
+        alert(JSON.stringify(err));
       },
       success: function (resp) {
-        if (resp.code == 0) {
+        if (resp.code == 10000) {
           alert("注册成功");
           window.location.href = "/user/signin";
         } else {

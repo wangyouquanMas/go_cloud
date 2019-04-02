@@ -81,7 +81,13 @@
         }
       },
       success: function (body, textStatus, jqXHR) {
-        var resp = JSON.parse(body);
+        var resp = body;
+        if (typeof(resp) == 'string') {
+          resp = JSON.parse(body);
+        }
+        if (resp.code == 10005) {
+          window.location.href = "/static/view/signin.html";
+        }
         document.getElementById("username").innerHTML = resp.data.Username;
         document.getElementById("regtime").innerHTML = resp.data.SignupAt;
         updateFileList();

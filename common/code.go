@@ -15,4 +15,6 @@ const (
 	StatusRegisterFailed
 	// StatusLoginFailed : 登录失败
 	StatusLoginFailed
+	// StatusTokenInvalid : 10005 token无效
+	StatusTokenInvalid
 )
