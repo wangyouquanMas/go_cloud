@@ -39,7 +39,8 @@ git clone --branch v0.2 https://git.imooc.com/coding-323/filestore-server.git
 ```shell
 go get github.com/garyburd/redigo/redis
 go get github.com/go-sql-driver/mysql
-go get github.com/garyburd/redigo/redis
+#go get github.com/garyburd/redigo/redis
+go get github.com/gomodule/redigo/redis
 go get github.com/json-iterator/go
 go get github.com/aliyun/aliyun-oss-go-sdk/oss
 go get gopkg.in/amz.v1/aws
