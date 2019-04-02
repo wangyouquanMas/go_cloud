@@ -6,5 +6,5 @@ const (
 	// CephSecretKey : 访问密钥
 	CephSecretKey = "cf3dwPMeadGbtEgwFUEA6emRVrVfDHpv0pLXFYby"
 	// CephGWEndpoint : gateway地址
-	CephGWEndpoint = "http://<你的rgw_host>:7480"
+	CephGWEndpoint = "http://<你的rgw_host>:<<你的rgw_port>>"
 )
