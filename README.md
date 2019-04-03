@@ -8,7 +8,7 @@
     - master分支: 通过原生net/http实现各接口功能
     - gin分支: 通过Gin框架来改造http协议通讯相关模块代码
     - pkg分支: 通过go-bindata等工具实现静态资源打包的一个示例
-    - 其他分支与每章节的内容大致对应
+    - 其他分支与每章节的内容大致对应(比如第九章代码可以参考[charter9分支](https://git.imooc.com/coding-323/filestore-server/src/charter9))
 
 - 标签
     - tag是分支代码某个阶段的快照。如`master`主分支的`v0.1`是首个发布的版本，该版本接入了阿里OSS。
