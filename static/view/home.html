@@ -73,14 +73,10 @@
     $.ajax({
       url: "/user/info?" + queryParams(),
       type: "POST",
-      error: function (jqXHR, textStatus, errorThrown) {
-        if (textStatus == "error") {
-          alert(textStatus + " : " + errorThrown);
-        } else {
-          alert(textStatus);
-        }
+      error: function (err) {
+        alert(JSON.stringify(err));
       },
-      success: function (body, textStatus, jqXHR) {
+      success: function (body) {
         var resp = body;
         if (typeof(resp) == 'string') {
           resp = JSON.parse(body);
@@ -102,14 +98,10 @@
       data: {
         limit: 15
       },
-      error: function (jqXHR, textStatus, errorThrown) {
-        if (textStatus == "error") {
-          alert(textStatus + " : " + errorThrown);
-        } else {
-          alert(textStatus);
-        }
+      error: function (err) {
+        alert(JSON.stringify(err));
       },
-      success: function (body, textStatus, jqXHR) {
+      success: function (body) {
         if (!body) {
           return;
         }

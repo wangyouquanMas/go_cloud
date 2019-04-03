@@ -111,14 +111,7 @@ func UserInfoHandler(c *gin.Context) {
 	username := c.Request.FormValue("username")
 	//	token := c.Request.FormValue("token")
 
-	// // 2. 验证token是否有效
-	// isValidToken := IsTokenValid(token)
-	// if !isValidToken {
-	// 	w.WriteHeader(http.StatusForbidden)
-	// 	return
-	// }
-
-	// 3. 查询用户信息
+	// 2. 查询用户信息
 	user, err := dblayer.GetUserInfo(username)
 	if err != nil {
 		c.JSON(http.StatusForbidden,
@@ -126,7 +119,7 @@ func UserInfoHandler(c *gin.Context) {
 		return
 	}
 
-	// 4. 组装并且响应用户数据
+	// 3. 组装并且响应用户数据
 	resp := util.RespMsg{
 		Code: 0,
 		Msg:  "OK",
@@ -145,11 +138,13 @@ func UserExistsHandler(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError,
 			gin.H{
-				"msg": "server error",
+				"code": common.StatusServerError,
+				"msg":  "server error",
 			})
 	} else {
 		c.JSON(http.StatusOK,
 			gin.H{
+				"code":   common.StatusOK,
 				"msg":    "ok",
 				"exists": exists,
 			})
