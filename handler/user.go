@@ -132,7 +132,7 @@ func UserInfoHandler(c *gin.Context) {
 		Msg:  "OK",
 		Data: user,
 	}
-	c.Data(http.StatusOK, "octet-stream", resp.JSONBytes())
+	c.Data(http.StatusOK, "application/json", resp.JSONBytes())
 }
 
 // UserExistsHandler ： 查询用户是否存在
