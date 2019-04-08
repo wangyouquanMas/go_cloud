@@ -75,7 +75,7 @@
             url: "/user/info?" + queryParams(),
             type: "POST",
             error: function (err) {
-                alert(err);
+                alert(JSON.stringify(err));
             },
             success: function (body) {
                 var resp = body;

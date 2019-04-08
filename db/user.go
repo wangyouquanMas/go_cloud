@@ -80,23 +80,25 @@ func UpdateToken(username string, token string) bool {
 }
 
 // GetUserInfo : 查询用户信息
-func GetUserInfo(username string) (User, error) {
+func GetUserInfo(username string) (*User, error) {
 	user := User{}
 
 	stmt, err := mydb.DBConn().Prepare(
 		"select user_name,signup_at from tbl_user where user_name=? limit 1")
 	if err != nil {
 		fmt.Println(err.Error())
-		return user, err
+		// error不为nil, 返回时user应当置为nil
+		//return user, err
+		return nil, err
 	}
 	defer stmt.Close()
 
 	// 执行查询的操作
 	err = stmt.QueryRow(username).Scan(&user.Username, &user.SignupAt)
 	if err != nil {
-		return user, err
+		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 // UserExist : 查询用户是否存在

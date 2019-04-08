@@ -10,6 +10,10 @@ It is generated from these files:
 It has these top-level messages:
 	ReqSignup
 	RespSignup
+	ReqSignin
+	RespSignin
+	ReqUserInfo
+	RespUserInfo
 */
 package proto
 
@@ -42,7 +46,12 @@ var _ server.Option
 // Client API for UserService service
 
 type UserService interface {
+	// 用户注册
 	Signup(ctx context.Context, in *ReqSignup, opts ...client.CallOption) (*RespSignup, error)
+	// 用户登录
+	Signin(ctx context.Context, in *ReqSignin, opts ...client.CallOption) (*RespSignin, error)
+	// 获取用户信息
+	UserInfo(ctx context.Context, in *ReqUserInfo, opts ...client.CallOption) (*RespUserInfo, error)
 }
 
 type userService struct {
@@ -73,15 +82,42 @@ func (c *userService) Signup(ctx context.Context, in *ReqSignup, opts ...client.
 	return out, nil
 }
 
+func (c *userService) Signin(ctx context.Context, in *ReqSignin, opts ...client.CallOption) (*RespSignin, error) {
+	req := c.c.NewRequest(c.name, "UserService.Signin", in)
+	out := new(RespSignin)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userService) UserInfo(ctx context.Context, in *ReqUserInfo, opts ...client.CallOption) (*RespUserInfo, error) {
+	req := c.c.NewRequest(c.name, "UserService.UserInfo", in)
+	out := new(RespUserInfo)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for UserService service
 
 type UserServiceHandler interface {
+	// 用户注册
 	Signup(context.Context, *ReqSignup, *RespSignup) error
+	// 用户登录
+	Signin(context.Context, *ReqSignin, *RespSignin) error
+	// 获取用户信息
+	UserInfo(context.Context, *ReqUserInfo, *RespUserInfo) error
 }
 
 func RegisterUserServiceHandler(s server.Server, hdlr UserServiceHandler, opts ...server.HandlerOption) error {
 	type userService interface {
 		Signup(ctx context.Context, in *ReqSignup, out *RespSignup) error
+		Signin(ctx context.Context, in *ReqSignin, out *RespSignin) error
+		UserInfo(ctx context.Context, in *ReqUserInfo, out *RespUserInfo) error
 	}
 	type UserService struct {
 		userService
@@ -96,4 +132,12 @@ type userServiceHandler struct {
 
 func (h *userServiceHandler) Signup(ctx context.Context, in *ReqSignup, out *RespSignup) error {
 	return h.UserServiceHandler.Signup(ctx, in, out)
+}
+
+func (h *userServiceHandler) Signin(ctx context.Context, in *ReqSignin, out *RespSignin) error {
+	return h.UserServiceHandler.Signin(ctx, in, out)
+}
+
+func (h *userServiceHandler) UserInfo(ctx context.Context, in *ReqUserInfo, out *RespUserInfo) error {
+	return h.UserServiceHandler.UserInfo(ctx, in, out)
 }
