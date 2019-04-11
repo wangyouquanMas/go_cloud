@@ -241,6 +241,7 @@ func DownloadHandler(c *gin.Context) {
 		// ceph中的文件，通过ceph api先下载
 		bucket := ceph.GetCephBucket("userfile")
 		data, _ := bucket.Get(fm.Location)
+		//	c.Header("content-type", "application/octect-stream")
 		c.Header("content-disposition", "attachment; filename=\""+userFile.FileName+"\"")
 		c.Data(http.StatusOK, "application/octect-stream", data)
 	}

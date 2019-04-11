@@ -112,7 +112,7 @@
                 }
 
                 var downloadHtml = '<button class="btn btn-info" ' +
-                    'style="height:30px;margin:5px 0;"' +
+                    'style="height:30px;margin:5px 3px;"' +
                     'onClick = "downloadFile(\'http://localhost:8080/file/' +
                     'downloadurl?filehash={0}&{1}\')">下载</button>';
                 var renameFileHtml = '<button class="btn btn-warning" ' +
@@ -120,7 +120,7 @@
                     'onClick = "renameFile(\'{0}\',\'{1}\',\'http://localhost:8080/file/' +
                     'update?op=0&filehash={2}&{3}\')">重命名</button>';
                 var cdlFileHtml = '<button class="btn btn-info" ' +
-                    'style="height:30px;margin:5px 0;"' +
+                    'style="height:30px;margin:5px 3px;"' +
                     'onClick = "cdlFile(\'http://localhost:8080/file/' +
                     'download?filehash={0}&{1}\')">断点下载(火狐)</button>';
 
@@ -142,9 +142,10 @@
                     cell.innerHTML = data[i].LastUpdated;
 
                     cell = x.insertCell();
-                    cell.innerHTML = downloadHtml.format(data[i].FileHash, queryParams()) +
+                    cell.innerHTML = downloadHtml.format(data[i].FileHash, queryParams()) + cdlFileHtml
+                        .format(data[i].FileHash, queryParams()) +
                         renameFileHtml.format(data[i].FileHash, data[i].FileName, data[i].FileHash,
-                            queryParams()) + cdlFileHtml.format(data[i].FileHash, queryParams());
+                            queryParams());
                 }
             }
         });
@@ -176,6 +177,7 @@
     }
 
     function cdlFile(durl) {
+        localStorage.setItem('curDownloadUrl', durl);
         layer.open({
             type: 2,
             title: '断点续传下载演示',
