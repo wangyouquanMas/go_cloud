@@ -106,6 +106,8 @@ func UserInfoHandler(c *gin.Context) {
 	}
 
 	// 3. 组装并且响应用户数据
+
+	
 	cliResp := util.RespMsg{
 		Code: 0,
 		Msg:  "OK",

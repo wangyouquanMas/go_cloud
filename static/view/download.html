@@ -69,6 +69,9 @@
           lastByteLoaded = loadedSize();
           // alert(filesize + '  ' + lastByteLoaded + '   ' + arrayBuffer.byteLength);
           if (lastByteLoaded >= filesize) {
+            $("#progressing").html('[下载进度] 100%');
+            $("#ctlbtn").attr("disabled", "true");
+            
             var blob = new Blob(fileParts);
             saveAs(blob, filename);
           } else {
