@@ -80,6 +80,8 @@
       success: function (body) {
         localStorage.setItem("token", body.data.Token)
         localStorage.setItem("username", body.data.Username)
+        // 增加上传ip:port
+        localStorage.setItem("uploadEntry", body.data.UploadEntry);
         window.location.href = body.data.Location;
       }
     });

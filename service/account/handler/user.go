@@ -9,7 +9,7 @@ import (
 	"filestore-server/config"
 	cfg "filestore-server/config"
 	dblayer "filestore-server/db"
-	"filestore-server/service/account/proto"
+	proto "filestore-server/service/account/proto"
 	"filestore-server/util"
 )
 

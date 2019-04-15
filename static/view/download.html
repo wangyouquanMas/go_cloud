@@ -3,8 +3,9 @@
   <script src="/static/js/layui.js"></script>
   <script src="/static/js/FileSaver.js"></script>
   <script src="/static/js/sw.js"></script>
-  <script src="/static/js/StreamSaver.js"></script> <!-- load before streams polyfill to detect support -->
-  <script src="https://unpkg.com/@mattiasbuelens/web-streams-polyfill/dist/polyfill.min.js"></script>
+  <script src="/static/js/StreamSaver.js"></script>
+  <!-- load before streams polyfill to detect support -->
+  <script src="/static/js/polyfill.min.js"></script>
   <script type="text/javascript">
     var req = new XMLHttpRequest();
     var paused = false;
@@ -71,7 +72,7 @@
           if (lastByteLoaded >= filesize) {
             $("#progressing").html('[下载进度] 100%');
             $("#ctlbtn").attr("disabled", "true");
-            
+
             var blob = new Blob(fileParts);
             saveAs(blob, filename);
           } else {

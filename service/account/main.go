@@ -6,7 +6,7 @@ import (
 	micro "github.com/micro/go-micro"
 
 	"filestore-server/service/account/handler"
-	"filestore-server/service/account/proto"
+	proto "filestore-server/service/account/proto"
 )
 
 func main() {

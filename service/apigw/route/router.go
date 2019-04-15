@@ -20,6 +20,8 @@ func Router() *gin.Engine {
 	router.POST("/user/signin", handler.DoSigninHandler)
 	// 用户查询
 	router.POST("/user/info", handler.UserInfoHandler)
+	// 用户文件查询
+	router.POST("/file/query", handler.FileQueryHandler)
 
 	return router
 }
