@@ -22,6 +22,8 @@ func Router() *gin.Engine {
 	// 文件上传相关接口
 	router.POST("/file/upload", api.DoUploadHandler)
 	router.OPTIONS("/file/upload", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 		c.Status(204)
 	})
 
