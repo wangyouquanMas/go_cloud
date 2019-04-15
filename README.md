@@ -79,6 +79,28 @@ go get github.com/streadway/amqp
 > go run service/transfer/main.go
 ```
 
+-  微服务架构下启动方式(未完善):
+
+    - 启动上传应用程序:
+```bash
+> cd $GOPATH/filestore-server
+> go run service/upload/main.go --registry=consul
+```
+
+    - 启动账号系统应用程序:
+```bash
+> cd $GOPATH/filestore-server
+> go run service/account/main.go --registry=consul
+```
+
+    - 启动api网关:
+```bash
+> cd $GOPATH/filestore-server
+> go run service/apigw/main.go --registry=consul
+
+# 浏览器访问apigw的端口(默认8080)，如http://localhost:8080/user/signin
+```
+
 ## 进度说明：
 * [x] 简单的文件上传服务
 * [x] mysql存储文件元数据
