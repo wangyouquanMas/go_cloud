@@ -99,7 +99,6 @@ go get github.com/micro/go-micro
 ```bash
 > cd $GOPATH/filestore-server
 > go run service/apigw/main.go --registry=consul
-
 # 浏览器访问apigw的端口(默认8080)，如http://localhost:8080/user/signin
 ```
 
