@@ -57,7 +57,7 @@
         if (req.status !== 200 && req.status !== 206) {
           return;
         }
-        var name = req.getResponseHeader("Content-disposition");
+        var name = req.getResponseHeader("Content-Disposition");
         filename = name.match(/attachment; filename="(.*)"/)[1];
 
         if (req.readyState === 4) {}

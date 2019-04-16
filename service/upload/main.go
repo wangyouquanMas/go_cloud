@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	micro "github.com/micro/go-micro"
 
@@ -11,11 +12,11 @@ import (
 	upRpc "filestore-server/service/upload/rpc"
 )
 
-var done chan bool
-
 func startRpcService() {
 	service := micro.NewService(
 		micro.Name("go.micro.service.upload"), // 服务名称
+		micro.RegisterTTL(time.Second*10),     // TTL指定从上一次心跳间隔起，超过这个时间服务会被服务发现移除
+		micro.RegisterInterval(time.Second*5), // 让服务在指定时间内重新注册，保持TTL获取的注册时间有效
 	)
 	service.Init()
 
@@ -31,11 +32,9 @@ func startApiService() {
 }
 
 func main() {
-	// rpc 服务
-	go startRpcService()
-
 	// api 服务
-	startApiService()
+	go startApiService()
 
-	<-done
+	// rpc 服务
+	startRpcService()
 }
