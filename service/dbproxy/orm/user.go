@@ -1,121 +1,147 @@
 package orm
 
 import (
-	"fmt"
+	"log"
 
 	mydb "filestore-server/service/dbproxy/conn"
 )
 
-// User : 用户表model
-type User struct {
-	Username     string
-	Email        string
-	Phone        string
-	SignupAt     string
-	LastActiveAt string
-	Status       int
-}
-
 // UserSignup : 通过用户名及密码完成user表的注册操作
-func UserSignup(username string, passwd string) bool {
+func UserSignup(username string, passwd string) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare(
 		"insert ignore into tbl_user (`user_name`,`user_pwd`) values (?,?)")
 	if err != nil {
-		fmt.Println("Failed to insert, err:" + err.Error())
-		return false
+		log.Println("Failed to insert, err:" + err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
 	defer stmt.Close()
 
 	ret, err := stmt.Exec(username, passwd)
 	if err != nil {
-		fmt.Println("Failed to insert, err:" + err.Error())
-		return false
+		log.Println("Failed to insert, err:" + err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
 	if rowsAffected, err := ret.RowsAffected(); nil == err && rowsAffected > 0 {
-		return true
+		res.Suc = true
+		return
 	}
-	return false
+
+	res.Suc = false
+	res.Msg = "无记录更新"
+	return
 }
 
 // UserSignin : 判断密码是否一致
-func UserSignin(username string, encpwd string) bool {
+func UserSignin(username string, encpwd string) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare("select * from tbl_user where user_name=? limit 1")
 	if err != nil {
-		fmt.Println(err.Error())
-		return false
+		log.Println(err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(username)
 	if err != nil {
-		fmt.Println(err.Error())
-		return false
+		log.Println(err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	} else if rows == nil {
-		fmt.Println("username not found: " + username)
-		return false
+		log.Println("username not found: " + username)
+		res.Suc = false
+		res.Msg = "用户名未注册"
+		return
 	}
 
 	pRows := mydb.ParseRows(rows)
 	if len(pRows) > 0 && string(pRows[0]["user_pwd"].([]byte)) == encpwd {
-		return true
+		res.Suc = true
+		res.Data = true
+		return
 	}
-	return false
+	res.Suc = false
+	res.Msg = "用户名/密码不匹配"
+	return
 }
 
 // UpdateToken : 刷新用户登录的token
-func UpdateToken(username string, token string) bool {
+func UpdateToken(username string, token string) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare(
 		"replace into tbl_user_token (`user_name`,`user_token`) values (?,?)")
 	if err != nil {
-		fmt.Println(err.Error())
-		return false
+		log.Println(err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(username, token)
 	if err != nil {
-		fmt.Println(err.Error())
-		return false
+		log.Println(err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
-	return true
+	res.Suc = true
+	return
 }
 
 // GetUserInfo : 查询用户信息
-func GetUserInfo(username string) (*User, error) {
-	user := User{}
+func GetUserInfo(username string) (res ExecResult) {
+	user := TableUser{}
 
 	stmt, err := mydb.DBConn().Prepare(
 		"select user_name,signup_at from tbl_user where user_name=? limit 1")
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		// error不为nil, 返回时user应当置为nil
 		//return user, err
-		return nil, err
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
 	defer stmt.Close()
 
 	// 执行查询的操作
 	err = stmt.QueryRow(username).Scan(&user.Username, &user.SignupAt)
 	if err != nil {
-		return nil, err
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
-	return &user, nil
+	res.Suc = true
+	res.Data = user
+	return
 }
 
 // UserExist : 查询用户是否存在
-func UserExist(username string) (bool, error) {
-
+func UserExist(username string) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare(
 		"select 1 from tbl_user where user_name=? limit 1")
 	if err != nil {
-		fmt.Println(err.Error())
-		return false, err
+		log.Println(err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(username)
 	if err != nil {
-		return false, err
+		res.Suc = false
+		res.Msg = err.Error()
+		return
 	}
-	return rows.Next(), nil
+	res.Suc = true
+	res.Data = map[string]bool{
+		"exists": rows.Next(),
+	}
+	return
 }
