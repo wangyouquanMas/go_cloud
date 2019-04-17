@@ -10,11 +10,27 @@ import (
 	cfg "filestore-server/config"
 	dblayer "filestore-server/db"
 	proto "filestore-server/service/account/proto"
+	dbProto "filestore-server/service/dbproxy/proto"
 	"filestore-server/util"
+
+	"github.com/micro/go-micro"
+)
+
+var (
+	dbCli dbProto.DBProxyService
 )
 
 // User : 用于实现UserServiceHandler接口的对象
 type User struct{}
+
+func init() {
+	service := micro.NewService()
+	// 初始化， 解析命令行参数等
+	service.Init()
+
+	// 初始化一个dbproxy服务的客户端
+	dbCli = dbProto.NewDBProxyService("go.micro.service.dbproxy", service.Client())
+}
 
 // GenToken : 生成token
 func GenToken(username string) string {
@@ -80,6 +96,17 @@ func (u *User) Signin(ctx context.Context, req *proto.ReqSignin, res *proto.Resp
 
 // UserInfo ： 查询用户信息
 func (u *User) UserInfo(ctx context.Context, req *proto.ReqUserInfo, res *proto.RespUserInfo) error {
+	// uInfo, _ := json.Marshal([]interface{}{req.Username})
+	// dbRes, err := dbCli.ExecuteAction(context.TODO(), &dbProto.ReqExec{
+	// 	Action: []*dbProto.SingleAction{
+	// 		&dbProto.SingleAction{
+	// 			Name:   "/user/GetUserInfo",
+	// 			Params: uInfo,
+	// 		},
+	// 	},
+	// })
+	// log.Printf("dbRpcRes: %+v %+v\n", dbRes, err)
+
 	// 查询用户信息
 	user, err := dblayer.GetUserInfo(req.Username)
 	if err != nil {
