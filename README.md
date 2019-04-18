@@ -2,6 +2,10 @@
 
 基于golang实现的一种分布式云存储服务
 
+## 关于微服务架构交互逻辑
+
+![逻辑交互图](http://https://git.imooc.com/coding-323/filestore-server/src/654ca041090cf44e7cac2de2c1c92cfa631a45ef/doc/microservice_interact_archi.png)
+
 ## 关于分支和标签
 
 - 分支说明:
