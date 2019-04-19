@@ -3,9 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -45,7 +45,7 @@ func DoUploadHandler(c *gin.Context) {
 	// 1. 从form表单中获得文件内容句柄
 	file, head, err := c.Request.FormFile("file")
 	if err != nil {
-		fmt.Printf("Failed to get form data, err:%s\n", err.Error())
+		log.Printf("Failed to get form data, err:%s\n", err.Error())
 		errCode = -1
 		return
 	}
@@ -54,7 +54,7 @@ func DoUploadHandler(c *gin.Context) {
 	// 2. 把文件内容转为[]byte
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {
-		fmt.Printf("Failed to get file data, err:%s\n", err.Error())
+		log.Printf("Failed to get file data, err:%s\n", err.Error())
 		errCode = -2
 		return
 	}
@@ -71,7 +71,7 @@ func DoUploadHandler(c *gin.Context) {
 	fileMeta.Location = cfg.TempLocalRootDir + fileMeta.FileSha1 // 临时存储地址
 	newFile, err := os.Create(fileMeta.Location)
 	if err != nil {
-		fmt.Printf("Failed to create file, err:%s\n", err.Error())
+		log.Printf("Failed to create file, err:%s\n", err.Error())
 		errCode = -3
 		return
 	}
@@ -79,7 +79,7 @@ func DoUploadHandler(c *gin.Context) {
 
 	nByte, err := newFile.Write(buf.Bytes())
 	if int64(nByte) != fileMeta.FileSize || err != nil {
-		fmt.Printf("Failed to save data into file, writtenSize:%d, err:%s\n", nByte, err.Error())
+		log.Printf("Failed to save data into file, writtenSize:%d, err:%s\n", nByte, err.Error())
 		errCode = -4
 		return
 	}
@@ -100,7 +100,7 @@ func DoUploadHandler(c *gin.Context) {
 			// TODO: 设置oss中的文件名，方便指定文件名下载
 			err = oss.Bucket().PutObject(ossPath, newFile)
 			if err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 				errCode = -5
 				return
 			}
@@ -151,7 +151,7 @@ func TryFastUploadHandler(c *gin.Context) {
 	// 2. 从文件表中查询相同hash的文件记录
 	fileMeta, err := meta.GetFileMetaDB(filehash)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
