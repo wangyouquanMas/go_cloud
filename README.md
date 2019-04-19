@@ -93,6 +93,12 @@ go get github.com/micro/go-micro
 > go run service/upload/main.go --registry=consul
 ```
 
+    - 启动下载应用程序:
+```bash
+> cd $GOPATH/filestore-server
+> go run service/download/main.go --registry=consul
+```
+
     - 启动账号系统应用程序:
 ```bash
 > cd $GOPATH/filestore-server

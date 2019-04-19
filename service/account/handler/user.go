@@ -8,29 +8,13 @@ import (
 	"filestore-server/common"
 	"filestore-server/config"
 	cfg "filestore-server/config"
-	dblayer "filestore-server/db"
+	dbcli "filestore-server/service/account/db"
 	proto "filestore-server/service/account/proto"
-	dbProto "filestore-server/service/dbproxy/proto"
 	"filestore-server/util"
-
-	"github.com/micro/go-micro"
-)
-
-var (
-	dbCli dbProto.DBProxyService
 )
 
 // User : 用于实现UserServiceHandler接口的对象
 type User struct{}
-
-func init() {
-	service := micro.NewService()
-	// 初始化， 解析命令行参数等
-	service.Init()
-
-	// 初始化一个dbproxy服务的客户端
-	dbCli = dbProto.NewDBProxyService("go.micro.service.dbproxy", service.Client())
-}
 
 // GenToken : 生成token
 func GenToken(username string) string {
@@ -55,7 +39,7 @@ func (u *User) Signup(ctx context.Context, req *proto.ReqSignup, res *proto.Resp
 	// 对密码进行加盐及取Sha1值加密
 	encPasswd := util.Sha1([]byte(passwd + cfg.PasswordSalt))
 	// 将用户信息注册到用户表中
-	suc := dblayer.UserSignup(username, encPasswd)
+	suc := dbcli.UserSignup(username, encPasswd)
 	if suc {
 		res.Code = common.StatusOK
 		res.Message = "注册成功"
