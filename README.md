@@ -53,7 +53,9 @@ go get gopkg.in/amz.v1/aws
 go get gopkg.in/amz.v1/s3
 go get github.com/streadway/amqp
 go get github.com/gin-gonic/gin
+github.com/gin-contrib/cors
 go get github.com/micro/go-micro
+go get github.com/mitchellh/mapstructure
 ```
 其中如果有提示`golang.org/x`相关的包无法下载的话，可以参考这篇文章:
 [国内下载golang.org/x/net](https://yq.aliyun.com/articles/292301?spm=5176.10695662.1996646101.searchclickresult.6155183eCmXHbQ)
