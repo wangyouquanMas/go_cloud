@@ -8,7 +8,7 @@ import (
 	"filestore-server/common"
 	"filestore-server/config"
 	cfg "filestore-server/config"
-	dbcli "filestore-server/service/account/db"
+	dblayer "filestore-server/db"
 	proto "filestore-server/service/account/proto"
 	"filestore-server/util"
 )
@@ -39,7 +39,9 @@ func (u *User) Signup(ctx context.Context, req *proto.ReqSignup, res *proto.Resp
 	// 对密码进行加盐及取Sha1值加密
 	encPasswd := util.Sha1([]byte(passwd + cfg.PasswordSalt))
 	// 将用户信息注册到用户表中
-	suc := dbcli.UserSignup(username, encPasswd)
+	//	resp, err := dbcli.UserSignup(username, encPasswd)
+	//if err == nil && resp.suc {
+	suc := dblayer.UserSignup(username, encPasswd)
 	if suc {
 		res.Code = common.StatusOK
 		res.Message = "注册成功"
@@ -80,17 +82,6 @@ func (u *User) Signin(ctx context.Context, req *proto.ReqSignin, res *proto.Resp
 
 // UserInfo ： 查询用户信息
 func (u *User) UserInfo(ctx context.Context, req *proto.ReqUserInfo, res *proto.RespUserInfo) error {
-	// uInfo, _ := json.Marshal([]interface{}{req.Username})
-	// dbRes, err := dbCli.ExecuteAction(context.TODO(), &dbProto.ReqExec{
-	// 	Action: []*dbProto.SingleAction{
-	// 		&dbProto.SingleAction{
-	// 			Name:   "/user/GetUserInfo",
-	// 			Params: uInfo,
-	// 		},
-	// 	},
-	// })
-	// log.Printf("dbRpcRes: %+v %+v\n", dbRes, err)
-
 	// 查询用户信息
 	user, err := dblayer.GetUserInfo(req.Username)
 	if err != nil {
