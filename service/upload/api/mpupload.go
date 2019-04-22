@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"os"
@@ -14,7 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 
 	rPool "filestore-server/cache/redis"
-	dblayer "filestore-server/db"
+	"filestore-server/config"
+	cfg "filestore-server/config"
+	dbcli "filestore-server/service/dbproxy/client"
+	"filestore-server/util"
 )
 
 // MultipartUploadInfo : 初始化信息
@@ -24,6 +28,10 @@ type MultipartUploadInfo struct {
 	UploadID   string
 	ChunkSize  int
 	ChunkCount int
+}
+
+func init() {
+	os.MkdirAll(config.TempPartRootDir, 0744)
 }
 
 // InitialMultipartUploadHandler : 初始化分块上传
@@ -82,7 +90,7 @@ func UploadPartHandler(c *gin.Context) {
 	defer rConn.Close()
 
 	// 3. 获得文件句柄，用于存储分块内容
-	fpath := "/data/" + uploadID + "/" + chunkIndex
+	fpath := config.TempPartRootDir + uploadID + "/" + chunkIndex
 	os.MkdirAll(path.Dir(fpath), 0744)
 	fd, err := os.Create(fpath)
 	if err != nil {
@@ -139,7 +147,7 @@ func CompleteUploadHandler(c *gin.Context) {
 			http.StatusOK,
 			gin.H{
 				"code": -1,
-				"msg":  "OK",
+				"msg":  "服务错误",
 				"data": nil,
 			})
 		return
@@ -160,18 +168,53 @@ func CompleteUploadHandler(c *gin.Context) {
 			http.StatusOK,
 			gin.H{
 				"code": -2,
-				"msg":  "OK",
+				"msg":  "分块不完整",
 				"data": nil,
 			})
 		return
 	}
 
-	// 4. TODO：合并分块
+	// 4. TODO：合并分块, 可以将ceph当临时存储，合并时将文件写入ceph;
+	// 也可以不用在本地进行合并，转移的时候将分块append到ceph/oss即可
+	srcPath := config.TempPartRootDir + upid + "/"
+	destPath := cfg.TempLocalRootDir + filehash
+	cmd := fmt.Sprintf("cd %s && ls | sort -n | xargs cat > %s", srcPath, destPath)
+	mergeRes, err := util.ExecLinuxShell(cmd)
+	if err != nil {
+		log.Println(err)
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": -2,
+				"msg":  "合并失败",
+				"data": nil,
+			})
+		return
+	}
+	log.Println(mergeRes)
 
 	// 5. 更新唯一文件表及用户文件表
 	fsize, _ := strconv.Atoi(filesize)
-	dblayer.OnFileUploadFinished(filehash, filename, int64(fsize), "")
-	dblayer.OnUserFileUploadFinished(username, filehash, filename, int64(fsize))
+
+	fmeta := dbcli.FileMeta{
+		FileSha1: filehash,
+		FileName: filename,
+		FileSize: int64(fsize),
+		Location: destPath,
+	}
+	_, ferr := dbcli.OnFileUploadFinished(fmeta)
+	_, uferr := dbcli.OnUserFileUploadFinished(username, fmeta)
+	if ferr != nil || uferr != nil {
+		log.Println(err)
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": -2,
+				"msg":  "数据更新失败",
+				"data": nil,
+			})
+		return
+	}
 
 	// 6. 响应处理结果
 	c.JSON(

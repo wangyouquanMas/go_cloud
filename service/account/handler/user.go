@@ -8,8 +8,8 @@ import (
 	"filestore-server/common"
 	"filestore-server/config"
 	cfg "filestore-server/config"
-	dblayer "filestore-server/db"
 	proto "filestore-server/service/account/proto"
+	dbcli "filestore-server/service/dbproxy/client"
 	"filestore-server/util"
 )
 
@@ -39,10 +39,8 @@ func (u *User) Signup(ctx context.Context, req *proto.ReqSignup, res *proto.Resp
 	// 对密码进行加盐及取Sha1值加密
 	encPasswd := util.Sha1([]byte(passwd + cfg.PasswordSalt))
 	// 将用户信息注册到用户表中
-	//	resp, err := dbcli.UserSignup(username, encPasswd)
-	//if err == nil && resp.suc {
-	suc := dblayer.UserSignup(username, encPasswd)
-	if suc {
+	dbResp, err := dbcli.UserSignup(username, encPasswd)
+	if err == nil && dbResp.Suc {
 		res.Code = common.StatusOK
 		res.Message = "注册成功"
 	} else {
@@ -60,16 +58,16 @@ func (u *User) Signin(ctx context.Context, req *proto.ReqSignin, res *proto.Resp
 	encPasswd := util.Sha1([]byte(password + config.PasswordSalt))
 
 	// 1. 校验用户名及密码
-	pwdChecked := dblayer.UserSignin(username, encPasswd)
-	if !pwdChecked {
+	dbResp, err := dbcli.UserSignin(username, encPasswd)
+	if err != nil || !dbResp.Suc {
 		res.Code = common.StatusLoginFailed
 		return nil
 	}
 
 	// 2. 生成访问凭证(token)
 	token := GenToken(username)
-	upRes := dblayer.UpdateToken(username, token)
-	if !upRes {
+	upRes, err := dbcli.UpdateToken(username, token)
+	if err != nil || !upRes.Suc {
 		res.Code = common.StatusServerError
 		return nil
 	}
@@ -83,18 +81,20 @@ func (u *User) Signin(ctx context.Context, req *proto.ReqSignin, res *proto.Resp
 // UserInfo ： 查询用户信息
 func (u *User) UserInfo(ctx context.Context, req *proto.ReqUserInfo, res *proto.RespUserInfo) error {
 	// 查询用户信息
-	user, err := dblayer.GetUserInfo(req.Username)
+	dbResp, err := dbcli.GetUserInfo(req.Username)
 	if err != nil {
 		res.Code = common.StatusServerError
 		res.Message = "服务错误"
 		return nil
 	}
 	// 查不到对应的用户信息
-	if user == nil {
+	if !dbResp.Suc {
 		res.Code = common.StatusUserNotExists
 		res.Message = "用户不存在"
 		return nil
 	}
+
+	user := dbcli.ToTableUser(dbResp.Data)
 
 	// 3. 组装并且响应用户数据
 	res.Code = common.StatusOK

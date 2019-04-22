@@ -8,16 +8,15 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	cmn "filestore-server/common"
 	cfg "filestore-server/config"
-	dblayer "filestore-server/db"
-	"filestore-server/meta"
 	"filestore-server/mq"
+	dbcli "filestore-server/service/dbproxy/client"
+	"filestore-server/service/dbproxy/orm"
 	"filestore-server/store/ceph"
 	"filestore-server/store/oss"
 	"filestore-server/util"
@@ -60,7 +59,7 @@ func DoUploadHandler(c *gin.Context) {
 	}
 
 	// 3. 构建文件元信息
-	fileMeta := meta.FileMeta{
+	fileMeta := dbcli.FileMeta{
 		FileName: head.Filename,
 		FileSha1: util.Sha1(buf.Bytes()), //　计算文件sha1
 		FileSize: int64(len(buf.Bytes())),
@@ -89,12 +88,12 @@ func DoUploadHandler(c *gin.Context) {
 	if cfg.CurrentStoreType == cmn.StoreCeph {
 		// 文件写入Ceph存储
 		data, _ := ioutil.ReadAll(newFile)
-		cephPath := "/ceph/" + fileMeta.FileSha1
+		cephPath := cfg.CephRootDir + fileMeta.FileSha1
 		_ = ceph.PutObject("userfile", cephPath, data)
 		fileMeta.Location = cephPath
 	} else if cfg.CurrentStoreType == cmn.StoreOSS {
 		// 文件写入OSS存储
-		ossPath := "oss/" + fileMeta.FileSha1
+		ossPath := cfg.OSSRootDir + fileMeta.FileSha1
 		// 判断写入OSS为同步还是异步
 		if !cfg.AsyncTransferEnable {
 			// TODO: 设置oss中的文件名，方便指定文件名下载
@@ -126,13 +125,16 @@ func DoUploadHandler(c *gin.Context) {
 	}
 
 	//6.  更新文件表记录
-	_ = meta.UpdateFileMetaDB(fileMeta)
+	_, err = dbcli.OnFileUploadFinished(fileMeta)
+	if err != nil {
+		errCode = -6
+		return
+	}
 
 	// 7. 更新用户文件表
 	username := c.Request.FormValue("username")
-	suc := dblayer.OnUserFileUploadFinished(username, fileMeta.FileSha1,
-		fileMeta.FileName, fileMeta.FileSize)
-	if suc {
+	upRes, err := dbcli.OnUserFileUploadFinished(username, fileMeta)
+	if err == nil && upRes.Suc {
 		errCode = 0
 	} else {
 		errCode = -6
@@ -146,10 +148,10 @@ func TryFastUploadHandler(c *gin.Context) {
 	username := c.Request.FormValue("username")
 	filehash := c.Request.FormValue("filehash")
 	filename := c.Request.FormValue("filename")
-	filesize, _ := strconv.Atoi(c.Request.FormValue("filesize"))
+	// filesize, _ := strconv.Atoi(c.Request.FormValue("filesize"))
 
 	// 2. 从文件表中查询相同hash的文件记录
-	fileMeta, err := meta.GetFileMetaDB(filehash)
+	fileMetaResp, err := dbcli.GetFileMeta(filehash)
 	if err != nil {
 		log.Println(err.Error())
 		c.Status(http.StatusInternalServerError)
@@ -157,7 +159,7 @@ func TryFastUploadHandler(c *gin.Context) {
 	}
 
 	// 3. 查不到记录则返回秒传失败
-	if fileMeta == nil {
+	if !fileMetaResp.Suc {
 		resp := util.RespMsg{
 			Code: -1,
 			Msg:  "秒传失败，请访问普通上传接口",
@@ -167,9 +169,10 @@ func TryFastUploadHandler(c *gin.Context) {
 	}
 
 	// 4. 上传过则将文件信息写入用户文件表， 返回成功
-	suc := dblayer.OnUserFileUploadFinished(
-		username, filehash, filename, int64(filesize))
-	if suc {
+	fmeta := dbcli.TableFileToFileMeta(fileMetaResp.Data.(orm.TableFile))
+	fmeta.FileName = filename
+	upRes, err := dbcli.OnUserFileUploadFinished(username, fmeta)
+	if err == nil && upRes.Suc {
 		resp := util.RespMsg{
 			Code: 0,
 			Msg:  "秒传成功",

@@ -32,7 +32,7 @@ func OnUserFileUploadFinished(username, filehash, filename string, filesize int6
 }
 
 // QueryUserFileMetas : 批量获取用户文件信息
-func QueryUserFileMetas(username string, limit int) (res ExecResult) {
+func QueryUserFileMetas(username string, limit int64) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare(
 		"select file_sha1,file_name,file_size,upload_at," +
 			"last_update from tbl_user_file where user_name=? limit ?")

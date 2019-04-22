@@ -3,12 +3,13 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"filestore-server/config"
-	dblayer "filestore-server/db"
-	"filestore-server/mq"
-	"filestore-server/store/oss"
 	"log"
 	"os"
+
+	"filestore-server/config"
+	"filestore-server/mq"
+	dbcli "filestore-server/service/dbproxy/client"
+	"filestore-server/store/oss"
 )
 
 // ProcessTransfer : 处理文件转移
@@ -36,9 +37,17 @@ func ProcessTransfer(msg []byte) bool {
 		return false
 	}
 
-	_ = dblayer.UpdateFileLocation(
+	resp, err := dbcli.UpdateFileLocation(
 		pubData.FileHash,
 		pubData.DestLocation)
+	if err != nil {
+		log.Println(err.Error())
+		return false
+	}
+	if !resp.Suc {
+		log.Println("更新数据库异常，请检查:" + pubData.FileHash)
+		return false
+	}
 	return true
 }
 
