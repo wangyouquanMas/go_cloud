@@ -53,7 +53,9 @@ go get gopkg.in/amz.v1/aws
 go get gopkg.in/amz.v1/s3
 go get github.com/streadway/amqp
 go get github.com/gin-gonic/gin
+go get github.com/gin-contrib/cors
 go get github.com/micro/go-micro
+go get github.com/mitchellh/mapstructure
 ```
 其中如果有提示`golang.org/x`相关的包无法下载的话，可以参考这篇文章:
 [国内下载golang.org/x/net](https://yq.aliyun.com/articles/292301?spm=5176.10695662.1996646101.searchclickresult.6155183eCmXHbQ)
@@ -85,31 +87,38 @@ go get github.com/micro/go-micro
 > go run service/transfer/main.go
 ```
 
--  微服务架构下启动方式(未完善):
+-  微服务架构下启动方式(非容器化部署):
 
-    - 启动上传应用程序:
+    - 一键启动微服务(start-all.sh):
 ```bash
 > cd $GOPATH/filestore-server
-> go run service/upload/main.go --registry=consul
+> ./service/start-all.sh 
+ 编译完成:  service/bin/dbproxy
+ 编译完成:  service/bin/upload
+ 编译完成:  service/bin/download
+ 编译完成:  service/bin/transfer
+ 编译完成:  service/bin/account
+ 编译完成:  service/bin/apigw
+ 已启动  dbproxy
+ 已启动  upload
+ 已启动  download
+ 已启动  transfer
+ 已启动  account
+ 已启动  apigw
+微服务启动完毕.
 ```
 
-    - 启动下载应用程序:
+    - 一键关闭微服务(stop-all.sh):
 ```bash
 > cd $GOPATH/filestore-server
-> go run service/download/main.go --registry=consul
-```
-
-    - 启动账号系统应用程序:
-```bash
-> cd $GOPATH/filestore-server
-> go run service/account/main.go --registry=consul
-```
-
-    - 启动api网关:
-```bash
-> cd $GOPATH/filestore-server
-> go run service/apigw/main.go --registry=consul
-# 浏览器访问apigw的端口(默认8080)，如http://localhost:8080/user/signin
+> ./service/stop-all.sh 
+ 已关闭:  apigw
+ 已关闭:  account
+ 已关闭:  transfer
+ 已关闭:  download
+ 已关闭:  upload
+ 已关闭:  dbproxy
+执行完毕.
 ```
 
 ## 进度说明：
@@ -122,7 +131,7 @@ go get github.com/micro/go-micro
 * [x] 搭建及使用Ceph对象存储集群
 * [x] 使用阿里云OSS对象存储服务
 * [x] 使用RabbitMQ实现异步任务队列
-* [ ] 微服务化(API网关, 服务注册, RPC通讯)
+* [x] 微服务化(API网关, 服务注册, RPC通讯)
 * [ ] CI/CD(持续集成)
 
 ## 参考资料

@@ -11,6 +11,8 @@ service UserService {
     rpc UserInfo(ReqUserInfo) returns (RespUserInfo) {}
     // 获取用户文件
     rpc UserFiles(ReqUserFile) returns (RespUserFile) {}
+        // 获取用户文件
+        rpc UserFileRename(ReqUserFileRename) returns (RespUserFileRename) {}
 }
 
 message ReqSignup {
@@ -58,4 +60,16 @@ message RespUserFile {
     int32 code = 1;
     string message =2;
     bytes fileData = 3;
+}
+
+message ReqUserFileRename {
+  string username = 1;
+  string filehash = 2;
+  string newFileName = 3;
+}
+
+message RespUserFileRename {
+  int32 code = 1;
+  string message =2;
+  bytes fileData = 3;
 }

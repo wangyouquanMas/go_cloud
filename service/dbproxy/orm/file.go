@@ -72,7 +72,7 @@ func GetFileMeta(filehash string) (res ExecResult) {
 }
 
 // GetFileMetaList : 从mysql批量获取文件元信息
-func GetFileMetaList(limit int) (res ExecResult) {
+func GetFileMetaList(limit int64) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare(
 		"select file_sha1,file_addr,file_name,file_size from tbl_file " +
 			"where status=1 limit ?")
