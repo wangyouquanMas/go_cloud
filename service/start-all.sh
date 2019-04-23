@@ -1,15 +1,30 @@
 #!/bin/bash
 
+# 检查service进程
 check_process() {
     sleep 1
-    res=`ps aux | grep -v grep | grep $1`
-    if [[ res != '' ]]; then
-        echo '服务:' $1 ' 已启动'
+    res=`ps aux | grep -v grep | grep "service/bin" | grep $1`
+    if [[ $res != '' ]]; then
+        echo -e "\033[32m 已启动 \033[0m" "$1"
         return 1
     else
-        echo '服务:' $1 ' 启动失败'
+        echo -e "\033[31m 启动失败 \033[0m" "$1"
         return 0
     fi
+}
+
+# 编译service可执行文件
+build_service() {
+    go build -o service/bin/$1 service/$1/main.go
+    resbin=`ls service/bin/ | grep $1`
+    echo -e "\033[32m 编译完成: \033[0m service/bin/$resbin"
+}
+
+# 启动service
+run_service() {
+    nohup ./service/bin/$1 --registry=consul >> $logpath/$1.log 2>&1 &
+    sleep 1
+    check_process $1
 }
 
 # 创建运行日志目录
@@ -17,35 +32,32 @@ logpath=/data/log/filestore-server
 mkdir -p $logpath
 
 # 切换到工程根目录
-# cd $GOPATH/filestore-server
-cd /data/go/work/src/filestore-server
+#cd $GOPATH/filestore-server
+#cd /data/go/work/src/filestore-server
 
 # 微服务可以用supervisor做进程管理工具；
 # 或者也可以通过docker/k8s进行部署
 
-# 启动dbproxy service
-nohup go run service/dbproxy/main.go --registry=consul >> $logpath/dbproxy.log 2>&1 &
-check_process 'dbproxy'
+services="
+dbproxy
+upload
+download
+transfer
+account
+apigw
+"
 
-# 启动上传service
-nohup go run service/upload/main.go --registry=consul >> $logpath/upload.log 2>&1 &
-check_process 'upload'
+# 执行编译service
+for service in $services
+do
+    build_service $service
+done
 
-# 启动下载service
-nohup go run service/download/main.go --registry=consul >> $logpath/download.log 2>&1 &
-check_process 'download'
-
-# 启动文件转移service
-nohup go run service/transfer/main.go --registry=consul >> $logpath/transfer.log 2>&1 &
-check_process 'transfer'
-
-# 启动用户系统service
-nohup go run service/account/main.go --registry=consul >> $logpath/account.log 2>&1 &
-check_process 'account'
-
-# 启动apigw service
-nohup go run service/apigw/main.go --registry=consul >> $logpath/apigw.log 2>&1 &
-check_process 'apigw'
+# 执行启动service
+for service in $services
+do
+    run_service $service
+done
 
 echo '微服务启动完毕.'
 
