@@ -53,7 +53,7 @@ go get gopkg.in/amz.v1/aws
 go get gopkg.in/amz.v1/s3
 go get github.com/streadway/amqp
 go get github.com/gin-gonic/gin
-github.com/gin-contrib/cors
+go get github.com/gin-contrib/cors
 go get github.com/micro/go-micro
 go get github.com/mitchellh/mapstructure
 ```
@@ -87,9 +87,9 @@ go get github.com/mitchellh/mapstructure
 > go run service/transfer/main.go
 ```
 
--  微服务架构下启动方式:
+-  微服务架构下启动方式(非容器化部署):
 
-    - 脚本一键启动微服务:
+    - 一键启动微服务(start-all.sh):
 ```bash
 > cd $GOPATH/filestore-server
 > ./service/start-all.sh 
@@ -108,7 +108,7 @@ go get github.com/mitchellh/mapstructure
 微服务启动完毕.
 ```
 
-    - 脚本一键关闭微服务:
+    - 一键关闭微服务(stop-all.sh):
 ```bash
 > cd $GOPATH/filestore-server
 > ./service/stop-all.sh 
@@ -131,7 +131,7 @@ go get github.com/mitchellh/mapstructure
 * [x] 搭建及使用Ceph对象存储集群
 * [x] 使用阿里云OSS对象存储服务
 * [x] 使用RabbitMQ实现异步任务队列
-* [ ] 微服务化(API网关, 服务注册, RPC通讯)
+* [x] 微服务化(API网关, 服务注册, RPC通讯)
 * [ ] CI/CD(持续集成)
 
 ## 参考资料
