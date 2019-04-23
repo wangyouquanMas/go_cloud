@@ -87,31 +87,38 @@ go get github.com/mitchellh/mapstructure
 > go run service/transfer/main.go
 ```
 
--  微服务架构下启动方式(未完善):
+-  微服务架构下启动方式:
 
-    - 启动上传应用程序:
+    - 脚本一键启动微服务:
 ```bash
 > cd $GOPATH/filestore-server
-> go run service/upload/main.go --registry=consul
+> ./service/start-all.sh 
+ 编译完成:  service/bin/dbproxy
+ 编译完成:  service/bin/upload
+ 编译完成:  service/bin/download
+ 编译完成:  service/bin/transfer
+ 编译完成:  service/bin/account
+ 编译完成:  service/bin/apigw
+ 已启动  dbproxy
+ 已启动  upload
+ 已启动  download
+ 已启动  transfer
+ 已启动  account
+ 已启动  apigw
+微服务启动完毕.
 ```
 
-    - 启动下载应用程序:
+    - 脚本一键关闭微服务:
 ```bash
 > cd $GOPATH/filestore-server
-> go run service/download/main.go --registry=consul
-```
-
-    - 启动账号系统应用程序:
-```bash
-> cd $GOPATH/filestore-server
-> go run service/account/main.go --registry=consul
-```
-
-    - 启动api网关:
-```bash
-> cd $GOPATH/filestore-server
-> go run service/apigw/main.go --registry=consul
-# 浏览器访问apigw的端口(默认8080)，如http://localhost:8080/user/signin
+> ./service/stop-all.sh 
+ 已关闭:  apigw
+ 已关闭:  account
+ 已关闭:  transfer
+ 已关闭:  download
+ 已关闭:  upload
+ 已关闭:  dbproxy
+执行完毕.
 ```
 
 ## 进度说明：
