@@ -22,7 +22,12 @@ func DownloadURLHandler(c *gin.Context) {
 	// 从文件表查找记录
 	dbResp, err := dbcli.GetFileMeta(filehash)
 	if err != nil {
-		c.Status(int(common.StatusServerError))
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": common.StatusServerError,
+				"msg":  "server error",
+			})
 		return
 	}
 
@@ -52,7 +57,12 @@ func DownloadHandler(c *gin.Context) {
 	fResp, ferr := dbcli.GetFileMeta(fsha1)
 	ufResp, uferr := dbcli.QueryUserFileMeta(username, fsha1)
 	if ferr != nil || uferr != nil || !fResp.Suc || !ufResp.Suc {
-		c.Status(int(common.StatusServerError))
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": common.StatusServerError,
+				"msg":  "server error",
+			})
 		return
 	}
 	uniqFile := dbcli.ToTableFile(fResp.Data)
