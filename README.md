@@ -6,6 +6,11 @@
 
 <img src='/doc/microservice_interact_archi.png' width="800px"></img>
 
+
+## 关于代码结构的迁移
+
+工程根目录下的`handler`文件夹里的代码已逐步分拆到`service`文件夹内， 因此该文件夹可看做是过期的代码，请忽略。另外`meta`文件夹下的代码也已经去掉，主要的逻辑已经修改迁移到`service`内。
+
 ## 关于分支和标签
 
 - 分支说明:
