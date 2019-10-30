@@ -85,7 +85,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		defer newFile.Close()
 
 		nByte, err := newFile.Write(buf.Bytes())
-		if int64(nByte) != fileMeta.FileSize || err != nil {
+		if int64(nByte) != fileMeta.FileSize {
 			fmt.Printf("Failed to save data into file, writtenSize:%d, fileMetaSize:%d\n", nByte, fileMeta.FileSize)
 			return
 		} else if err != nil {
