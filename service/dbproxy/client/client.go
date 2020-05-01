@@ -8,6 +8,7 @@ import (
 
 	"github.com/micro/go-micro"
 
+	"filestore-server/config"
 	"filestore-server/service/dbproxy/orm"
 	dbProto "filestore-server/service/dbproxy/proto"
 )
@@ -26,7 +27,9 @@ var (
 )
 
 func init() {
-	service := micro.NewService()
+	service := micro.NewService(
+		micro.Registry(config.RegistryConsul()),
+	)
 	// 初始化， 解析命令行参数等
 	service.Init()
 	// 初始化一个dbproxy服务的客户端

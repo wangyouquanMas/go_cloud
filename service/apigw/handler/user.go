@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"filestore-server/common"
+	"filestore-server/config"
 	"filestore-server/util"
 	"log"
 	"net/http"
@@ -23,7 +24,9 @@ var (
 )
 
 func init() {
-	service := micro.NewService()
+	service := micro.NewService(
+		micro.Registry(config.RegistryConsul()),
+	)
 	// 初始化， 解析命令行参数等
 	service.Init()
 
