@@ -52,12 +52,3 @@ for service in $services
 do
     build_service $service
 done
-
-# 执行启动service
-for service in $services
-do
-    run_service $service
-done
-
-echo '微服务启动完毕.'
-

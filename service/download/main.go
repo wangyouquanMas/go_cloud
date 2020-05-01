@@ -6,17 +6,19 @@ import (
 
 	micro "github.com/micro/go-micro"
 
+	"filestore-server/config"
 	cfg "filestore-server/service/download/config"
 	dlProto "filestore-server/service/download/proto"
 	"filestore-server/service/download/route"
 	dlRpc "filestore-server/service/download/rpc"
 )
 
-func startRpcService() {
+func startRPCService() {
 	service := micro.NewService(
 		micro.Name("go.micro.service.download"), // 在注册中心中的服务名称
 		micro.RegisterTTL(time.Second*10),
 		micro.RegisterInterval(time.Second*5),
+		micro.Registry(config.RegistryConsul()), // micro(v1.18) 需要显式指定consul (modifiled at 2020.04)
 	)
 	service.Init()
 
@@ -26,15 +28,15 @@ func startRpcService() {
 	}
 }
 
-func startApiService() {
+func startAPIService() {
 	router := route.Router()
 	router.Run(cfg.DownloadServiceHost)
 }
 
 func main() {
 	// api 服务
-	go startApiService()
+	go startAPIService()
 
 	// rpc 服务
-	startRpcService()
+	startRPCService()
 }
