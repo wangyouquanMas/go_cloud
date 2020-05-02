@@ -181,3 +181,31 @@ func RenameFileName(username, filehash, filename string) (*orm.ExecResult, error
 	res, err := execAction("/ufile/RenameFileName", uInfo)
 	return parseBody(res), err
 }
+
+func GetUserToken(username string) (string, error) {
+	uInfo, _ := json.Marshal([]interface{}{username})
+	res, err := execAction("/user/GetUserToken", uInfo)
+	if err != nil {
+		return "", err
+	}
+	var data map[string]string
+	err = json.Unmarshal(res.Data, &data)
+	if err != nil {
+		return "", err
+	}
+	return data["token"], nil
+}
+
+func IsUserFileUploaded(username string, filehash string) (bool, error) {
+	uInfo, _ := json.Marshal([]interface{}{username, filehash})
+	res, err := execAction("/ufile/UserFileUploaded", uInfo)
+	if err != nil {
+		return false, err
+	}
+	var data map[string]bool
+	err = json.Unmarshal(res.Data, &data)
+	if err != nil {
+		return false, err
+	}
+	return data["exists"], nil
+}

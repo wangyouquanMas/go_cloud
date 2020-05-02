@@ -13,17 +13,19 @@ var funcs = map[string]interface{}{
 	"/file/GetFileMetaList":      orm.GetFileMetaList,
 	"/file/UpdateFileLocation":   orm.UpdateFileLocation,
 
-	"/user/UserSignup":  orm.UserSignup,
-	"/user/UserSignin":  orm.UserSignin,
-	"/user/UpdateToken": orm.UpdateToken,
-	"/user/GetUserInfo": orm.GetUserInfo,
-	"/user/UserExist":   orm.UserExist,
+	"/user/UserSignup":   orm.UserSignup,
+	"/user/UserSignin":   orm.UserSignin,
+	"/user/UpdateToken":  orm.UpdateToken,
+	"/user/GetUserInfo":  orm.GetUserInfo,
+	"/user/UserExist":    orm.UserExist,
+	"/user/GetUserToken": orm.GetUserToken,
 
 	"/ufile/OnUserFileUploadFinished": orm.OnUserFileUploadFinished,
 	"/ufile/QueryUserFileMetas":       orm.QueryUserFileMetas,
 	"/ufile/DeleteUserFile":           orm.DeleteUserFile,
 	"/ufile/RenameFileName":           orm.RenameFileName,
 	"/ufile/QueryUserFileMeta":        orm.QueryUserFileMeta,
+	"/ufile/UserFileUploaded":         orm.IsUserFileUploaded,
 }
 
 func FuncCall(name string, params ...interface{}) (result []reflect.Value, err error) {

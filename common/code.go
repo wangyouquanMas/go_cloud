@@ -17,6 +17,8 @@ const (
 	StatusLoginFailed
 	// StatusTokenInvalid : 10005 token无效
 	StatusTokenInvalid
-	// StatusUserNotExists: 10006 用户不存在
+	// StatusUserNotExists : 10006 用户不存在
 	StatusUserNotExists
+	// FileAlreadExists : 10006 文件已存在
+	FileAlreadExists
 )

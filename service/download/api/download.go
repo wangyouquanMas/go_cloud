@@ -2,6 +2,8 @@ package api
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -34,7 +36,7 @@ func DownloadURLHandler(c *gin.Context) {
 	tblFile := dbcli.ToTableFile(dbResp.Data)
 
 	// TODO: 判断文件存在OSS，还是Ceph，还是在本地
-	if strings.HasPrefix(tblFile.FileAddr.String, cfg.TempLocalRootDir) ||
+	if strings.HasPrefix(tblFile.FileAddr.String, cfg.MergeLocalRootDir) ||
 		strings.HasPrefix(tblFile.FileAddr.String, cfg.CephRootDir) {
 		username := c.Request.FormValue("username")
 		token := c.Request.FormValue("token")
@@ -46,6 +48,8 @@ func DownloadURLHandler(c *gin.Context) {
 		signedURL := oss.DownloadURL(tblFile.FileAddr.String)
 		log.Println(tblFile.FileAddr.String)
 		c.Data(http.StatusOK, "application/octet-stream", []byte(signedURL))
+	} else {
+		c.Data(http.StatusOK, "application/octet-stream", []byte("Error: 下载链接暂时无法生成"))
 	}
 }
 
@@ -68,15 +72,37 @@ func DownloadHandler(c *gin.Context) {
 	uniqFile := dbcli.ToTableFile(fResp.Data)
 	userFile := dbcli.ToTableUserFile(ufResp.Data)
 
-	if strings.HasPrefix(uniqFile.FileAddr.String, cfg.TempLocalRootDir) {
+	if strings.HasPrefix(uniqFile.FileAddr.String, cfg.MergeLocalRootDir) {
 		// 本地文件， 直接下载
 		c.FileAttachment(uniqFile.FileAddr.String, userFile.FileName)
 	} else if strings.HasPrefix(uniqFile.FileAddr.String, cfg.CephRootDir) {
+		fmt.Println("to download file from ceph...")
 		// ceph中的文件，通过ceph api先下载
 		bucket := ceph.GetCephBucket("userfile")
 		data, _ := bucket.Get(uniqFile.FileAddr.String)
 		//	c.Header("content-type", "application/octect-stream")
 		c.Header("content-disposition", "attachment; filename=\""+userFile.FileName+"\"")
 		c.Data(http.StatusOK, "application/octect-stream", data)
+	} else if strings.HasPrefix(uniqFile.FileAddr.String, cfg.OSSRootDir) {
+		fmt.Println("to download file from oss...")
+		var err1 error
+		var err2 error
+		var fd io.ReadCloser
+		var fileData []byte
+		fd, err1 = oss.Bucket().GetObject(uniqFile.FileAddr.String)
+		if err1 == nil {
+			fileData, err2 = ioutil.ReadAll(fd)
+			if err2 == nil {
+				c.Header("content-disposition", "attachment; filename=\""+userFile.FileName+"\"")
+				c.Data(http.StatusOK, "application/octect-stream", fileData)
+			}
+		}
+		if err1 != nil || err2 != nil {
+			c.Data(http.StatusInternalServerError, "application/octect-stream", []byte("Intern server error."))
+			return
+		}
+	} else {
+		c.Data(http.StatusNotFound, "application/octect-stream", []byte("File not found."))
+		return
 	}
 }

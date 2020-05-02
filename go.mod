@@ -10,6 +10,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.4.0
 	github.com/gomodule/redigo v1.8.0
+	github.com/json-iterator/go v1.1.9
 	github.com/micro/go-micro v1.18.0
 	github.com/micro/go-plugins/registry/consul v0.0.0-20200119172437-4fe21aa238fd
 	github.com/mitchellh/mapstructure v1.1.2

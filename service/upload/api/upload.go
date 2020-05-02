@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	cmn "filestore-server/common"
-	cfg "filestore-server/config"
+	cmnCfg "filestore-server/config"
 	"filestore-server/mq"
 	dbcli "filestore-server/service/dbproxy/client"
 	"filestore-server/service/dbproxy/orm"
@@ -21,6 +22,17 @@ import (
 	"filestore-server/store/oss"
 	"filestore-server/util"
 )
+
+func init() {
+	if err := os.MkdirAll(cmnCfg.TempLocalRootDir, 0744); err != nil {
+		fmt.Println("无法指定目录用于存储临时文件: " + cmnCfg.TempLocalRootDir)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll(cmnCfg.MergeLocalRootDir, 0744); err != nil {
+		fmt.Println("无法指定目录用于存储合并后文件: " + cmnCfg.MergeLocalRootDir)
+		os.Exit(1)
+	}
+}
 
 // DoUploadHandler ： 处理文件上传
 func DoUploadHandler(c *gin.Context) {
@@ -67,7 +79,7 @@ func DoUploadHandler(c *gin.Context) {
 	}
 
 	// 4. 将文件写入临时存储位置
-	fileMeta.Location = cfg.TempLocalRootDir + fileMeta.FileSha1 // 临时存储地址
+	fileMeta.Location = cmnCfg.MergeLocalRootDir + fileMeta.FileSha1 // 存储地址
 	newFile, err := os.Create(fileMeta.Location)
 	if err != nil {
 		log.Printf("Failed to create file, err:%s\n", err.Error())
@@ -85,17 +97,17 @@ func DoUploadHandler(c *gin.Context) {
 
 	// 5. 同步或异步将文件转移到Ceph/OSS
 	newFile.Seek(0, 0) // 游标重新回到文件头部
-	if cfg.CurrentStoreType == cmn.StoreCeph {
+	if cmnCfg.CurrentStoreType == cmn.StoreCeph {
 		// 文件写入Ceph存储
 		data, _ := ioutil.ReadAll(newFile)
-		cephPath := cfg.CephRootDir + fileMeta.FileSha1
+		cephPath := cmnCfg.CephRootDir + fileMeta.FileSha1
 		_ = ceph.PutObject("userfile", cephPath, data)
 		fileMeta.Location = cephPath
-	} else if cfg.CurrentStoreType == cmn.StoreOSS {
+	} else if cmnCfg.CurrentStoreType == cmn.StoreOSS {
 		// 文件写入OSS存储
-		ossPath := cfg.OSSRootDir + fileMeta.FileSha1
+		ossPath := cmnCfg.OSSRootDir + fileMeta.FileSha1
 		// 判断写入OSS为同步还是异步
-		if !cfg.AsyncTransferEnable {
+		if !cmnCfg.AsyncTransferEnable {
 			// TODO: 设置oss中的文件名，方便指定文件名下载
 			err = oss.Bucket().PutObject(ossPath, newFile)
 			if err != nil {
@@ -114,8 +126,8 @@ func DoUploadHandler(c *gin.Context) {
 			}
 			pubData, _ := json.Marshal(data)
 			pubSuc := mq.Publish(
-				cfg.TransExchangeName,
-				cfg.TransOSSRoutingKey,
+				cmnCfg.TransExchangeName,
+				cmnCfg.TransOSSRoutingKey,
 				pubData,
 			)
 			if !pubSuc {

@@ -145,3 +145,31 @@ func UserExist(username string) (res ExecResult) {
 	}
 	return
 }
+
+// GetUserToken : 获取用户登录token (根据同学们反馈增加的方法)
+func GetUserToken(username string) (res ExecResult) {
+	stmt, err := mydb.DBConn().Prepare(
+		"select user_token from tbl_user_token where user_name=? limit 1")
+	if err != nil {
+		log.Println("GetUserToken prepare: " + err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
+	}
+	defer stmt.Close()
+
+	// 执行查询
+	var token string
+	err = stmt.QueryRow(username).Scan(&token)
+	if err != nil {
+		log.Println("GetUserToken scan: " + err.Error())
+		res.Suc = false
+		res.Msg = err.Error()
+		return
+	}
+	res.Suc = true
+	res.Data = map[string]string{
+		"token": token,
+	}
+	return
+}
