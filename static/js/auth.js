@@ -1,4 +1,4 @@
-var serverHost = "http://123.56.68.120:8080";
+var serverHost = "http://<你的实际ip地址>:8080";
 
 function queryParams() {
     var username = localStorage.getItem("username");
