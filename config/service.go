@@ -15,7 +15,7 @@ const (
 func RegistryConsul() registry.Registry {
 	return consul.NewRegistry(
 		// TODO ip需根据实际情况来修改
-		registry.Addrs("192.168.2.244:8500"),
+		registry.Addrs("172.24.4.255:8500"),
 	)
 }
 

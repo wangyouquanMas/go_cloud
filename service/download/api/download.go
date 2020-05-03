@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"log"
 	"net/http"
 	"strings"
@@ -105,4 +106,44 @@ func DownloadHandler(c *gin.Context) {
 		c.Data(http.StatusNotFound, "application/octect-stream", []byte("File not found."))
 		return
 	}
+}
+
+// RangeDownloadHandler : 支持断点的文件下载接口
+func RangeDownloadHandler(c *gin.Context) {
+	fsha1 := c.Request.FormValue("filehash")
+	username := c.Request.FormValue("username")
+
+        fResp, ferr := dbcli.GetFileMeta(fsha1)
+        ufResp, uferr := dbcli.QueryUserFileMeta(username, fsha1)
+        if ferr != nil || uferr != nil || !fResp.Suc || !ufResp.Suc {
+                c.JSON(
+                        http.StatusOK,
+                        gin.H{
+                                "code": common.StatusServerError,
+                                "msg":  "server error",
+                        })
+                return
+        }
+//         uniqFile := dbcli.ToTableFile(fResp.Data)
+        userFile := dbcli.ToTableUserFile(ufResp.Data)
+
+	// 使用本地目录文件
+	fpath := cfg.MergeLocalRootDir + fsha1
+	fmt.Println("range-download-fpath: " + fpath)
+
+	f, err := os.Open(fpath)
+	if err != nil {
+                c.JSON(
+                        http.StatusOK,
+                        gin.H{
+                                "code": common.StatusServerError,
+                                "msg":  "server error",
+                        })
+                return
+	}
+	defer f.Close()
+
+	c.Writer.Header().Set("Content-Type", "application/octect-stream")
+	c.Writer.Header().Set("content-disposition", "attachment; filename=\""+userFile.FileName+"\"")
+	c.File(fpath)
 }

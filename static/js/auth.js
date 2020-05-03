@@ -1,4 +1,4 @@
-var serverHost = "http://localhost:8080";
+var serverHost = "http://123.56.68.120:8080";
 
 function queryParams() {
     var username = localStorage.getItem("username");

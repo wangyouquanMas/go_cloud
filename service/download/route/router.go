@@ -31,6 +31,7 @@ func Router() *gin.Engine {
 
 	// 文件下载相关接口
 	router.GET("/file/download", api.DownloadHandler)
+	router.GET("/file/download/range", api.RangeDownloadHandler)
 	router.POST("/file/downloadurl", api.DownloadURLHandler)
 
 	return router
