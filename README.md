@@ -1,13 +1,13 @@
 ## 关于应用启动
 
-    - 启动上传应用程序:
+- 启动上传应用程序:
 ```bash
 # cd $GOPATH/src/<你的工程目录>
 > cd $GOPATH/src/filestore-server
 > go run service/upload/main.go
 ```
 
-    - 启动转移应用程序:
+- 启动转移应用程序:
 ```bash
 # cd $GOPATH/src/<你的工程目录>
 > cd $GOPATH/src/filestore-server
