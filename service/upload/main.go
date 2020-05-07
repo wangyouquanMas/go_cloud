@@ -36,6 +36,8 @@ func main() {
 		handler.HTTPInterceptor(handler.UploadPartHandler))
 	http.HandleFunc("/file/mpupload/complete",
 		handler.HTTPInterceptor(handler.CompleteUploadHandler))
+	http.HandleFunc("/file/mpupload/cancel",
+		handler.HTTPInterceptor(handler.CancelUploadHandler))
 
 	// 用户相关接口
 	// http.HandleFunc("/", handler.SignInHandler)

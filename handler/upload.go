@@ -1,17 +1,14 @@
 package handler
 
 import (
-	"bytes"
 	"encoding/json"
 	"filestore-server/mq"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	cmn "filestore-server/common"
@@ -24,15 +21,12 @@ import (
 )
 
 func init() {
-	// 目录已存在
-	if _, err := os.Stat(cfg.TempLocalRootDir); err == nil {
-		return
+	if err := os.MkdirAll(cfg.TempLocalRootDir, 0744); err != nil {
+		fmt.Println("无法指定目录用于存储临时文件: " + cfg.TempLocalRootDir)
+		os.Exit(1)
 	}
-
-	// 尝试创建目录
-	err := os.MkdirAll(cfg.TempLocalRootDir, 0744)
-	if err != nil {
-		log.Println("无法创建临时存储目录，程序将退出")
+	if err := os.MkdirAll(cfg.MergeLocalRootDir, 0744); err != nil {
+		fmt.Println("无法指定目录用于存储合并后文件: " + cfg.MergeLocalRootDir)
 		os.Exit(1)
 	}
 }
@@ -52,31 +46,21 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// 所以直接redirect到http.FileServer所配置的url
 		// http.Redirect(w, r, "/static/view/index.html",  http.StatusFound)
 	} else if r.Method == "POST" {
-		// 1. 从form表单中获得文件内容句柄
+		// 接收文件流及存储到本地目录
 		file, head, err := r.FormFile("file")
 		if err != nil {
-			fmt.Printf("Failed to get form data, err:%s\n", err.Error())
+			fmt.Printf("Failed to get data, err:%s\n", err.Error())
 			return
 		}
 		defer file.Close()
 
-		// 2. 把文件内容转为[]byte
-		buf := bytes.NewBuffer(nil)
-		if _, err := io.Copy(buf, file); err != nil {
-			fmt.Printf("Failed to get file data, err:%s\n", err.Error())
-			return
-		}
-
-		// 3. 构建文件元信息
+		tmpPath := cfg.TempLocalRootDir + head.Filename
 		fileMeta := meta.FileMeta{
 			FileName: head.Filename,
-			FileSha1: util.Sha1(buf.Bytes()), //　计算文件sha1
-			FileSize: int64(len(buf.Bytes())),
+			Location: tmpPath,
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
 
-		// 4. 将文件写入临时存储位置
-		fileMeta.Location = cfg.TempLocalRootDir + fileMeta.FileSha1 // 临时存储地址
 		newFile, err := os.Create(fileMeta.Location)
 		if err != nil {
 			fmt.Printf("Failed to create file, err:%s\n", err.Error())
@@ -84,36 +68,46 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer newFile.Close()
 
-		nByte, err := newFile.Write(buf.Bytes())
-		if int64(nByte) != fileMeta.FileSize {
-			fmt.Printf("Failed to save data into file, writtenSize:%d, fileMetaSize:%d\n", nByte, fileMeta.FileSize)
-			return
-		} else if err != nil {
+		fileMeta.FileSize, err = io.Copy(newFile, file)
+		if err != nil {
 			fmt.Printf("Failed to save data into file, err:%s\n", err.Error())
 			return
 		}
 
+		newFile.Seek(0, 0)
+		fileMeta.FileSha1 = util.FileSha1(newFile)
+
 		// 5. 同步或异步将文件转移到Ceph/OSS
 		newFile.Seek(0, 0) // 游标重新回到文件头部
+		mergePath := cfg.MergeLocalRootDir + fileMeta.FileSha1
 		if cfg.CurrentStoreType == cmn.StoreCeph {
 			// 文件写入Ceph存储
 			data, _ := ioutil.ReadAll(newFile)
 			cephPath := "/ceph/" + fileMeta.FileSha1
-			_ = ceph.PutObject("userfile", cephPath, data)
+			err = ceph.PutObject("userfile", cephPath, data)
+			if err != nil {
+				fmt.Println("upload ceph err: " + err.Error())
+				w.Write([]byte("Upload failed!"))
+				return
+			}
 			fileMeta.Location = cephPath
 		} else if cfg.CurrentStoreType == cmn.StoreOSS {
 			// 文件写入OSS存储
 			ossPath := "oss/" + fileMeta.FileSha1
 			// 判断写入OSS为同步还是异步
 			if !cfg.AsyncTransferEnable {
+				// 文件写入OSS存储
+				ossPath := "oss/" + fileMeta.FileSha1
 				err = oss.Bucket().PutObject(ossPath, newFile)
 				if err != nil {
-					fmt.Println(err.Error())
+					fmt.Println("upload oss err: " + err.Error())
 					w.Write([]byte("Upload failed!"))
 					return
 				}
 				fileMeta.Location = ossPath
 			} else {
+				// 文件尚未转移，暂存于本地mergePath
+				fileMeta.Location = mergePath
 				// 写入异步转移任务队列
 				data := mq.TransferData{
 					FileHash:      fileMeta.FileSha1,
@@ -134,7 +128,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//6.  更新用户文件表记录
-		// //meta.UpdateFileMeta(fileMeta)
 		_ = meta.UpdateFileMetaDB(fileMeta)
 
 		r.ParseForm()
@@ -196,38 +189,6 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Write(data)
-}
-
-// DownloadHandler : 文件下载接口
-func DownloadHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	fsha1 := r.Form.Get("filehash")
-	username := r.Form.Get("username")
-
-	fm, _ := meta.GetFileMetaDB(fsha1)
-	userFile, err := dblayer.QueryUserFileMeta(username, fsha1)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	f, err := os.Open(fm.Location)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/octect-stream")
-	// attachment表示文件将会提示下载到本地，而不是直接在浏览器中打开
-	w.Header().Set("content-disposition", "attachment; filename=\""+userFile.FileName+"\"")
 	w.Write(data)
 }
 
@@ -339,26 +300,4 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(resp.JSONBytes())
 	return
-}
-
-// DownloadURLHandler : 生成文件的下载地址
-func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
-	filehash := r.Form.Get("filehash")
-	// 从文件表查找记录
-	row, _ := dblayer.GetFileMeta(filehash)
-
-	// TODO: 判断文件存在OSS，还是Ceph，还是在本地
-	if strings.HasPrefix(row.FileAddr.String, cfg.TempLocalRootDir) {
-		username := r.Form.Get("username")
-		token := r.Form.Get("token")
-		tmpUrl := fmt.Sprintf("http://%s/file/download?filehash=%s&username=%s&token=%s",
-			r.Host, filehash, username, token)
-		w.Write([]byte(tmpUrl))
-	} else if strings.HasPrefix(row.FileAddr.String, "/ceph") {
-		// TODO: ceph下载url
-	} else if strings.HasPrefix(row.FileAddr.String, "oss/") {
-		// oss下载url
-		signedURL := oss.DownloadURL(row.FileAddr.String)
-		w.Write([]byte(signedURL))
-	}
 }
