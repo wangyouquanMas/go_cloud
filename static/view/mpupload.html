@@ -105,9 +105,9 @@
 
         console.log('mpupload init result:' + res);
         res = JSON.parse(res);
-        if (res && res.code == 10005) {
+        if (res && res.code == 10006) {
             alert("文件已存在，无需上传");
-            return false;         
+            return false;
         } else if (res == null || (res.code != 0 && res.code != 10000) || res.data == null) {
             alert(`上传初始化失败: ${uploadInitRes}`);
             return false;         
@@ -213,6 +213,10 @@
         let url = `${serverHost}/file/mpupload/complete?`+ queryParams() +extra;
         $.post(url, function(data){
             console.log(data);
+            let res = JSON.parse(data);
+            if (res.code == 0 || res.code == 10000) {
+                window.location.href = '/static/view/home.html';
+            }
         })
     }
 
