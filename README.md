@@ -61,3 +61,7 @@ var UploadServiceHost = "0.0.0.0:28080"
 ```bash
 ./service/stop-all.sh
 ```
+
+- 前端网盘首页效果
+
+<img src="/doc/home.png"></img>
