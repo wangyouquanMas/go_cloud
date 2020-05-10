@@ -11,7 +11,7 @@ import (
 func OnUserFileUploadFinished(username, filehash, filename string, filesize int64) (res ExecResult) {
 	stmt, err := mydb.DBConn().Prepare(
 		"insert ignore into tbl_user_file (`user_name`,`file_sha1`,`file_name`," +
-			"`file_size`,`upload_at`) values (?,?,?,?,?)")
+			"`file_size`,`upload_at`,`status`) values (?,?,?,?,?,1)")
 	if err != nil {
 		log.Println(err.Error())
 		res.Suc = false
@@ -158,12 +158,15 @@ func IsUserFileUploaded(username string, filehash string) (res ExecResult) {
 	if err != nil {
 		res.Suc = false
 		res.Msg = err.Error()
+		return
 	} else if rows == nil || !rows.Next() {
 		res.Suc = true
 		res.Data = map[string]bool{
 			"exists": false,
 		}
+		return
 	}
+
 	res.Suc = true
 	res.Data = map[string]bool{
 		"exists": true,

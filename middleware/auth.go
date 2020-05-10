@@ -1,10 +1,11 @@
-package handler
+package middleware
 
 import (
 	"filestore-server/common"
-	dblayer "filestore-server/db"
+	dbcli "filestore-server/service/dbproxy/client"
 	"filestore-server/util"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -37,17 +38,18 @@ func HTTPInterceptor() gin.HandlerFunc {
 // IsTokenValid : token是否有效
 func IsTokenValid(token string, username string) bool {
 	if len(token) != 40 {
-		fmt.Println("token invalid: " + token)
+		log.Println("token invalid: " + token)
 		return false
 	}
 	// example，假设token的有效期为1天   (根据同学们反馈完善, 相对于视频有所更新)
 	tokenTS := token[32:40]
 	if util.Hex2Dec(tokenTS) < time.Now().Unix()-86400 {
-		fmt.Println("token expired: " + token)
+		log.Println("token expired: " + token)
 		return false
 	}
 	// example, IsTokenValid方法增加传入参数username
-	if dblayer.GetUserToken(username) != token {
+	dbToken, err := dbcli.GetUserToken(username)
+	if err != nil || dbToken != token {
 		return false
 	}
 

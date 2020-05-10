@@ -162,6 +162,7 @@ func UploadPartHandler(c *gin.Context) {
 	// 1. 解析用户请求参数
 	//	username := c.Request.FormValue("username")
 	uploadID := c.Request.FormValue("uploadid")
+	chunkSha1 := c.Request.FormValue("chkhash")
 	chunkIndex := c.Request.FormValue("index")
 
 	// 2. 获得redis连接池中的一个连接
@@ -191,6 +192,21 @@ func UploadPartHandler(c *gin.Context) {
 		if err != nil {
 			break
 		}
+	}
+
+	// 校验分块hash (updated at 2020-05)
+	cmpSha1, err := util.ComputeSha1ByShell(fpath)
+	if err != nil || cmpSha1 != chunkSha1 {
+		log.Printf("Verify chunk sha1 failed, compare OK: %t, err:%+v\n",
+			cmpSha1 == chunkSha1, err)
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": -2,
+				"msg":  "Verify hash failed, chkIdx:" + chunkIndex,
+				"data": nil,
+			})
+		return
 	}
 
 	// 4. 更新redis缓存状态
@@ -264,7 +280,7 @@ func CompleteUploadHandler(c *gin.Context) {
 		c.JSON(
 			http.StatusOK,
 			gin.H{
-				"code": -2,
+				"code": -3,
 				"msg":  "合并失败",
 				"data": nil,
 			})
@@ -284,11 +300,31 @@ func CompleteUploadHandler(c *gin.Context) {
 	_, ferr := dbcli.OnFileUploadFinished(fileMeta)
 	_, uferr := dbcli.OnUserFileUploadFinished(username, fileMeta)
 	if ferr != nil || uferr != nil {
-		log.Println(err)
+		errMsg := ""
+		if ferr != nil {
+			errMsg = ferr.Error()
+		} else {
+			errMsg = uferr.Error()
+		}
+		log.Println(errMsg)
 		c.JSON(
 			http.StatusOK,
 			gin.H{
-				"code": -2,
+				"code": -4,
+				"msg":  "数据更新失败",
+				"data": errMsg,
+			})
+		return
+	}
+
+	// 更新于2020-04: 删除已上传的分块文件及redis分块信息
+	_, delHashErr := rConn.Do("DEL", HashUpIDKeyPrefix+filehash)
+	delUploadID, delUploadInfoErr := redis.Int64(rConn.Do("DEL", ChunkKeyPrefix+upid))
+	if delUploadID != 1 || delUploadInfoErr != nil || delHashErr != nil {
+		c.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": -5,
 				"msg":  "数据更新失败",
 				"data": nil,
 			})

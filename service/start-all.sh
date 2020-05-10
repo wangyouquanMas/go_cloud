@@ -32,8 +32,8 @@ logpath=/data/log/filestore-server
 mkdir -p $logpath
 
 # 切换到工程根目录
-cd $GOPATH/src/filestore-server
-#cd /data/go/work/src/filestore-server
+#cd $GOPATH/src/filestore-server
+cd $GOROOT/src/filestore-server
 
 # 微服务可以用supervisor做进程管理工具；
 # 或者也可以通过docker/k8s进行部署

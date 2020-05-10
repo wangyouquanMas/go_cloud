@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	"github.com/mitchellh/mapstructure"
 
@@ -188,11 +189,17 @@ func GetUserToken(username string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	execRes := parseBody(res)
+	if execRes == nil {
+		return "", nil
+	}
 	var data map[string]string
-	err = json.Unmarshal(res.Data, &data)
+	err = mapstructure.Decode(execRes.Data, &data)
 	if err != nil {
 		return "", err
 	}
+	log.Printf("GetUserToken: %+v\n", data)
 	return data["token"], nil
 }
 
@@ -202,10 +209,17 @@ func IsUserFileUploaded(username string, filehash string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	execRes := parseBody(res)
+	if execRes == nil {
+		return false, nil
+	}
+
 	var data map[string]bool
-	err = json.Unmarshal(res.Data, &data)
+	err = mapstructure.Decode(execRes.Data, &data)
 	if err != nil {
 		return false, err
 	}
+	log.Printf("IsUserFileUploaded: %s %s %+v\n", username, filehash, data)
 	return data["exists"], nil
 }

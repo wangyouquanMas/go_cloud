@@ -1,8 +1,10 @@
 package route
 
 import (
+	"filestore-server/middleware"
 	"filestore-server/service/apigw/handler"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +20,18 @@ func Router() *gin.Engine {
 	// 登录
 	router.GET("/user/signin", handler.SigninHandler)
 	router.POST("/user/signin", handler.DoSigninHandler)
+
+	// 使用gin插件支持跨域请求
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:  []string{"*"}, // []string{"http://localhost:8080"},
+		AllowMethods:  []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:  []string{"Origin", "Range", "x-requested-with", "content-Type"},
+		ExposeHeaders: []string{"Content-Length", "Accept-Ranges", "Content-Range", "Content-Disposition"},
+		// AllowCredentials: true,
+	}))
+
+	router.Use(middleware.HTTPInterceptor())
+
 	// 用户查询
 	router.POST("/user/info", handler.UserInfoHandler)
 
