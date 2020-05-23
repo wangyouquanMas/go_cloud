@@ -17,7 +17,6 @@ import (
 	cmnCfg "filestore-server/config"
 	"filestore-server/mq"
 	dbcli "filestore-server/service/dbproxy/client"
-	"filestore-server/service/dbproxy/orm"
 	"filestore-server/store/ceph"
 	"filestore-server/store/oss"
 	"filestore-server/util"
@@ -170,8 +169,8 @@ func TryFastUploadHandler(c *gin.Context) {
 		return
 	}
 
-	// 3. 查不到记录则返回秒传失败
-	if !fileMetaResp.Suc {
+	// 3. 查不到记录则返回秒传失败 (2020-05更新，判断Data == nil)
+	if !fileMetaResp.Suc || fileMetaResp.Data == nil {
 		resp := util.RespMsg{
 			Code: -1,
 			Msg:  "秒传失败，请访问普通上传接口",
@@ -181,7 +180,8 @@ func TryFastUploadHandler(c *gin.Context) {
 	}
 
 	// 4. 上传过则将文件信息写入用户文件表， 返回成功
-	fmeta := dbcli.TableFileToFileMeta(fileMetaResp.Data.(orm.TableFile))
+	tblFile := dbcli.ToTableFile(fileMetaResp.Data)
+	fmeta := dbcli.TableFileToFileMeta(tblFile)
 	fmeta.FileName = filename
 	upRes, err := dbcli.OnUserFileUploadFinished(username, fmeta)
 	if err == nil && upRes.Suc {
