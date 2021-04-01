@@ -83,10 +83,8 @@ func GetFileMetaList(limit int) ([]TableFile, error) {
 		return nil, err
 	}
 
-	cloumns, _ := rows.Columns()
-	values := make([]sql.RawBytes, len(cloumns))
 	var tfiles []TableFile
-	for i := 0; i < len(values) && rows.Next(); i++ {
+	for rows.Next() {
 		tfile := TableFile{}
 		err = rows.Scan(&tfile.FileHash, &tfile.FileAddr,
 			&tfile.FileName, &tfile.FileSize)
@@ -96,7 +94,6 @@ func GetFileMetaList(limit int) ([]TableFile, error) {
 		}
 		tfiles = append(tfiles, tfile)
 	}
-	fmt.Println(len(tfiles))
 	return tfiles, nil
 }
 
