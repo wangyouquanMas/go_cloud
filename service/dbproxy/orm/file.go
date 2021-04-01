@@ -2,6 +2,7 @@ package orm
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	mydb "filestore-server/service/dbproxy/conn"
@@ -92,20 +93,17 @@ func GetFileMetaList(limit int64) (res ExecResult) {
 		return
 	}
 
-	cloumns, _ := rows.Columns()
-	values := make([]sql.RawBytes, len(cloumns))
 	var tfiles []TableFile
-	for i := 0; i < len(values) && rows.Next(); i++ {
+	for rows.Next() {
 		tfile := TableFile{}
 		err = rows.Scan(&tfile.FileHash, &tfile.FileAddr,
 			&tfile.FileName, &tfile.FileSize)
 		if err != nil {
-			log.Println(err.Error())
+			fmt.Println(err.Error())
 			break
 		}
 		tfiles = append(tfiles, tfile)
 	}
-	//	log.Println(len(tfiles))
 	res.Suc = true
 	res.Data = tfiles
 	return
